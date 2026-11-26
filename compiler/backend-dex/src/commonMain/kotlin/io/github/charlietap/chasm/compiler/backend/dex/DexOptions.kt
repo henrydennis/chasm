@@ -15,4 +15,6 @@ data class DexOptions(
     val interruptible: Boolean = runtime.interrupts
 
     val stacktraces: Boolean = runtime.stacktraces
+
+    val suspendable: Boolean = runtime.suspendable
 }

@@ -10,6 +10,7 @@ class FunctionSummary internal constructor(
     internal val usesExceptions: Boolean,
     internal val mayGrowMemory: Boolean,
     internal val mayUnwind: Boolean,
+    internal val maySuspend: Boolean,
     internal val catchesExceptionReference: Boolean,
     internal val directCallees: IntArray,
     internal val indirectCallTypes: IntArray,
@@ -26,6 +27,7 @@ fun functionSummary(
     var raisesException = false
     var mayGrowMemory = false
     var mayUnwind = false
+    var maySuspend = false
     val callees = IntCollector()
     val indirectTypes = IntCollector()
     val bridged = IntCollector()
@@ -47,6 +49,7 @@ fun functionSummary(
                     instruction.callsUnknownFunction() -> {
                         mayGrowMemory = true
                         mayUnwind = true
+                        maySuspend = true
                     }
                 }
                 when (instruction) {
@@ -67,6 +70,7 @@ fun functionSummary(
         usesExceptions = function.exceptions != null || raisesException,
         mayGrowMemory = mayGrowMemory,
         mayUnwind = mayUnwind,
+        maySuspend = maySuspend,
         catchesExceptionReference = function.exceptions?.regions.orEmpty().any { region -> region.catches.any { handler -> handler.exceptionReference } },
         directCallees = callees.toArray(),
         indirectCallTypes = indirectTypes.toArray(),

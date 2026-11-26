@@ -44,6 +44,7 @@ internal fun LowerContext.lowerPositions(
 internal fun LowerContext.lowerOutOfLine() {
 
     lowerExceptionHandling()
+    lowerSuspensionDispatch()
 
     outOfLine.forEach { path -> path() }
 }

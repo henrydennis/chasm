@@ -23,6 +23,9 @@ interface CompiledModule {
     fun stacktraces(): Boolean
 
     @InternalChasmApi
+    fun suspendable(): Boolean
+
+    @InternalChasmApi
     fun fuel(): Long
 
     @InternalChasmApi

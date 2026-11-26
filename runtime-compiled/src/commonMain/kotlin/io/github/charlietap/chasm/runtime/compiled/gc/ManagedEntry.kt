@@ -26,6 +26,17 @@ fun enterObjects(
     return MANAGED_ENTRY.enter(context, function, words, references, pending)
 }
 
+@InternalChasmApi
+suspend fun enterObjectsSuspending(
+    context: ExecutionContext,
+    function: FunctionInstance,
+    words: LongArray,
+    references: Array<Any?>,
+    pending: PendingExceptions,
+): InvocationError? {
+    return MANAGED_ENTRY.enterSuspending(context, function, words, references, pending)
+}
+
 private class ManagedEntry {
 
     fun enter(
@@ -62,6 +73,62 @@ private class ManagedEntry {
             closeFrame(context, stack)
             throw failure
         } finally {
+            if (interrupt.enabled) {
+                interrupt.depth = depth
+            }
+        }
+    }
+
+    suspend fun enterSuspending(
+        context: ExecutionContext,
+        function: FunctionInstance,
+        words: LongArray,
+        references: Array<Any?>,
+        pending: PendingExceptions,
+    ): InvocationError? {
+
+        val store = context.store
+        val interrupt = store.interrupt
+        val depth = interrupt.depth
+        if (interrupt.enabled) {
+            if (depth == 0 && interrupt.requested) {
+                interrupt.requested = false
+            }
+            interrupt.depth = depth + 1
+        }
+
+        val stack = saveStack(context)
+        val previousAllowSuspend = context.allowSuspend
+        context.allowSuspend = true
+
+        try {
+            while (true) {
+                context.compiledCallDepth = store.compiledCallDepth
+                callObjects(context, context.instance, function, words, references, context.compiledCallDepth)
+                if (context.compiledSuspending) {
+                    context.compiledSuspending = false
+                    val suspension = checkNotNull(context.pendingSuspension) { "missing pending suspension" }
+                    context.pendingSuspension = null
+                    suspension.resume()
+                    context.compiledResuming = true
+                    continue
+                }
+                return if (context.compiledUnwinding) holdThrown(context, pending) else null
+            }
+        } catch (exception: InvocationException) {
+            resetSuspension(context)
+            closeFrame(context, stack)
+            return if (context.config.stacktraces) traceableTrap(store, context.vstack, exception, entryIp(function)) else exception.error
+        } catch (_: ClassCastException) {
+            resetSuspension(context)
+            closeFrame(context, stack)
+            return InvocationError.FailedToCastReference
+        } catch (failure: Throwable) {
+            resetSuspension(context)
+            closeFrame(context, stack)
+            throw failure
+        } finally {
+            context.allowSuspend = previousAllowSuspend
             if (interrupt.enabled) {
                 interrupt.depth = depth
             }

@@ -126,19 +126,20 @@ internal class FunctionLowering(
         reusable: RegisterHomes?,
     ): Attempt {
 
-        val wide = functionRegisters(function, analysis, null)
+        val suspendable = module.options.suspendable && module.analysis.maySuspend[function.index.index]
+        val wide = functionRegisters(function, analysis, null, suspendable = suspendable)
         if (wide.count > MAX_REGISTERS) {
             return Attempt.TooLarge(inlinedAccesses = false, homes = reusable)
         }
 
-        val firstTemporary = if (module.analysis.usesExceptions) facts.frame.frameSlots else facts.frame.firstTemporary
+        val firstTemporary = if (module.analysis.usesExceptions || suspendable) facts.frame.frameSlots else facts.frame.firstTemporary
         val initialised = BooleanArray(facts.frame.frameSlots) { slot -> slot < firstTemporary }
         val homes = reusable?.takeIf { candidate -> candidate.reusableFor(initialised) }
             ?: RegisterHomes(slotKindAnalyzer.analyze(function, facts.table, facts.frame, initialised), initialised)
 
         while (true) {
 
-            val registers = functionRegisters(function, analysis, homes)
+            val registers = functionRegisters(function, analysis, homes, suspendable = suspendable)
             if (registers.count >= ART_MAX_COMPILED_REGISTERS) {
                 return Attempt.TooLarge(inlinedAccesses = false, homes = homes)
             }
@@ -173,6 +174,10 @@ internal class FunctionLowering(
         whole: WholeFunctionAnalysis?,
         reusable: RegisterHomes?,
     ): Attempt {
+
+        if (module.options.suspendable && module.analysis.maySuspend[function.index.index]) {
+            return Attempt.Rejected("suspendable function f${function.index.index} exceeds single-method size limit")
+        }
 
         val analysis = whole?.analysis ?: analyzeFunction(module, function, facts, facts.memoryMode)
         if (chunkRegisters(function, analysis, null, null).count > MAX_REGISTERS) {
@@ -345,6 +350,7 @@ private fun functionRegisters(
     function: CirFunction,
     analysis: FunctionAnalysis,
     homes: RegisterHomes?,
+    suspendable: Boolean = false,
 ): Registers {
 
     val facts = analysis.facts
@@ -360,6 +366,7 @@ private fun functionRegisters(
         inlineMemory = analysis.usesInlineMemory,
         callBuffer = window.callBufferWords > 0,
         homes = homes,
+        suspendable = suspendable,
     )
 }
 

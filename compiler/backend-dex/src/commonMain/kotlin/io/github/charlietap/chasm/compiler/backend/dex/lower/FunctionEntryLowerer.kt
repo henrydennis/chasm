@@ -42,11 +42,23 @@ internal fun LowerContext.lowerPrologue() {
     }
     cachesLoaded = true
     openWindow()
-    receiveParameters()
-    initializeLocals()
-    if (facts.window.callBufferWords > 0) {
+    if (isSuspendable) {
+        if (facts.window.callBufferWords > 0) {
+            emit.const(Registers.I0, 0)
+            emit.moveObject(registers.callBuffer, Registers.I0)
+        }
         emit.const(Registers.I0, 0)
-        emit.moveObject(registers.callBuffer, Registers.I0)
+        emit.moveObject(registers.suspendCallee, Registers.I0)
+        initializeLocals()
+        lowerResumeEntryCheck()
+        receiveParameters()
+    } else {
+        receiveParameters()
+        initializeLocals()
+        if (facts.window.callBufferWords > 0) {
+            emit.const(Registers.I0, 0)
+            emit.moveObject(registers.callBuffer, Registers.I0)
+        }
     }
 }
 
@@ -126,10 +138,11 @@ private fun LowerContext.receiveParameters() {
 internal fun LowerContext.initializeLocals() {
 
     val initial = facts.frame.initialValues
-    val firstTemporary = if (module.analysis.usesExceptions) frameSlots else facts.frame.firstTemporary
+    val firstTemporary = if (module.analysis.usesExceptions || isSuspendable) frameSlots else facts.frame.firstTemporary
+    val startSlot = if (isSuspendable) 0 else parameterCount
 
     var zeroed = false
-    for (slot in parameterCount until frameSlots) {
+    for (slot in startSlot until frameSlots) {
 
         if (slot >= firstTemporary || kinds.homeMask(slot) == 0) {
             continue
@@ -140,7 +153,7 @@ internal fun LowerContext.initializeLocals() {
             zeroed = true
         }
 
-        val value = initial[slot]
+        val value = if (slot < parameterCount) 0L else initial[slot]
         forEachHome(slot) { kind ->
             val home = registers.home(slot, kind)
             val wide = SlotKindFlow.wide(kind)

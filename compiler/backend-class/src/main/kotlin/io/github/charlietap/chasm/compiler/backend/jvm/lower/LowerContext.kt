@@ -89,6 +89,10 @@ internal class LowerContext(
     val matcherOrder = ArrayList<Int>()
     var propagationLabel: Label? = null
 
+    val isSuspendable: Boolean get() = module.options.suspendable && module.analysis.maySuspend[function.index.index] && chunk == null
+    var resumeDispatchLabel: Label? = null
+    val suspendSites = ArrayList<SuspendSite>()
+
     fun regionAt(
         position: Int,
     ): Int = if (position < 0) -1 else facts.innermostRegion[position]

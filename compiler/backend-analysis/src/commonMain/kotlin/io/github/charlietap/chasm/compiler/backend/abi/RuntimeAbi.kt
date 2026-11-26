@@ -242,6 +242,17 @@ val REQUEST_TAIL_OBJECTS = managedOps.method("requestTailObjects", CONTEXT_TYPE,
 val REQUEST_TAIL_INDIRECT_OBJECTS = managedOps.method("requestTailIndirectObjects", CONTEXT_TYPE, MODULE_INSTANCE, REFERENCE_TABLE, "I", "I", "[J", "[Ljava/lang/Object;", returns = "V")
 val REQUEST_TAIL_REFERENCE_OBJECTS = managedOps.method("requestTailReferenceObjects", CONTEXT_TYPE, MODULE_INSTANCE, OBJECT_TYPE, "[J", "[Ljava/lang/Object;", returns = "V")
 val COMPLETE_TAIL_OBJECTS = managedOps.method("completeTailObjects", CONTEXT_TYPE, "[J", "[Ljava/lang/Object;", "I", returns = "V")
+val RESUME_TAIL_OBJECTS = managedOps.method("resumeTailObjects", CONTEXT_TYPE, "[J", "[Ljava/lang/Object;", "I", returns = "V")
+
+const val SUSPENDING_FIELD = "compiledSuspending"
+const val RESUMING_FIELD = "compiledResuming"
+const val SUSPENDED_FRAME_TYPE = "Lio/github/charlietap/chasm/runtime/execution/SuspendedFrame;"
+const val SUSPENDED_FRAME_SITE_FIELD = "site"
+const val SUSPENDED_FRAME_WORDS_FIELD = "words"
+const val SUSPENDED_FRAME_OBJECTS_FIELD = "objects"
+const val SUSPENDED_FRAME_CALLEE_FIELD = "callee"
+val PUSH_SUSPENDED_FRAME = managedOps.method("pushSuspendedFrame", CONTEXT_TYPE, "I", "[J", "[Ljava/lang/Object;", OBJECT_TYPE, returns = "V")
+val POP_SUSPENDED_FRAME = managedOps.method("popSuspendedFrame", CONTEXT_TYPE, returns = SUSPENDED_FRAME_TYPE)
 
 private val managedTables = Owner("Lio/github/charlietap/chasm/runtime/compiled/gc/ManagedTables;")
 

@@ -2256,6 +2256,14 @@
     return-object v1
 .end method
 
+.method public suspendable()Z
+    .registers 3
+
+    const/4 v0, 0x0
+
+    return v0
+.end method
+
 .method public tableBytes()J
     .registers 3
 

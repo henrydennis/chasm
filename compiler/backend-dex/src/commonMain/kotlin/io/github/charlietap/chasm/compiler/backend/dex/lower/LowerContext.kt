@@ -89,6 +89,12 @@ internal class LowerContext(
 
     val matcherLabels = emit.labels(function.exceptions?.regions?.size ?: 0)
 
+    val isSuspendable: Boolean get() = module.options.suspendable && module.analysis.maySuspend[function.index.index] && chunk == null
+
+    var resumeDispatchLabel: Label? = null
+
+    val suspendSites = ArrayList<SuspendSite>()
+
     private val firstPosition = chunk?.start ?: 0
 
     private var positionLabels: Labels? = null

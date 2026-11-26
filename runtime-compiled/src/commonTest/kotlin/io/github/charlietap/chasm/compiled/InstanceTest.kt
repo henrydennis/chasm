@@ -205,6 +205,10 @@ class InstanceTest {
             return setting { false }
         }
 
+        override fun suspendable(): Boolean {
+            return setting { false }
+        }
+
         override fun fuel(): Long {
             return setting { fuel }
         }
