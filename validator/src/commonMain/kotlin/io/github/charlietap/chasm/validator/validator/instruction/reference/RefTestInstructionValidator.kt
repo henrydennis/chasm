@@ -1,9 +1,11 @@
 package io.github.charlietap.chasm.validator.validator.instruction.reference
 
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.toResultOr
 import io.github.charlietap.chasm.ast.instruction.ReferenceInstruction
+import io.github.charlietap.chasm.type.AbstractHeapType
 import io.github.charlietap.chasm.type.HeapType
 import io.github.charlietap.chasm.type.ReferenceType
 import io.github.charlietap.chasm.type.ValueType
@@ -35,6 +37,10 @@ internal inline fun RefTestInstructionValidator(
         .toResultOr {
             TypeValidatorError.TypeMismatch
         }.bind()
+
+    if (superType == AbstractHeapType.Cont) {
+        Err(TypeValidatorError.TypeMismatch).bind()
+    }
 
     val expected = ValueType.Reference(ReferenceType.RefNull(superType))
     context.pop(expected).bind()

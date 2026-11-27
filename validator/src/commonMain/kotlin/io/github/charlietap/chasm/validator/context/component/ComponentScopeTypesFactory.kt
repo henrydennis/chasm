@@ -194,6 +194,7 @@ private class ComponentTypeCopyContext {
         is CompositeType.Array -> CompositeType.Array(arrayType(type.arrayType))
         is CompositeType.Function -> CompositeType.Function(functionType(type.functionType))
         is CompositeType.Struct -> CompositeType.Struct(structType(type.structType))
+        is CompositeType.Cont -> CompositeType.Cont(heapType(type.functionType) as ConcreteHeapType)
     }
 
     private fun functionType(type: FunctionType): FunctionType = type.copy(

@@ -91,5 +91,12 @@ internal inline fun ControlInstructionValidator(
         is ControlInstruction.Throw -> throwValidator(context, instruction)
         is ControlInstruction.ThrowRef -> throwRefValidator(context, instruction)
         is ControlInstruction.TryTable -> tryTableValidator(context, instruction)
+        is ControlInstruction.ContNew -> ContNewInstructionValidator(context, instruction)
+        is ControlInstruction.ContBind -> ContBindInstructionValidator(context, instruction)
+        is ControlInstruction.Suspend -> SuspendInstructionValidator(context, instruction)
+        is ControlInstruction.Resume -> ResumeInstructionValidator(context, instruction)
+        is ControlInstruction.ResumeThrow -> ResumeThrowInstructionValidator(context, instruction)
+        is ControlInstruction.ResumeThrowRef -> ResumeThrowRefInstructionValidator(context, instruction)
+        is ControlInstruction.Switch -> SwitchInstructionValidator(context, instruction)
     }
 }

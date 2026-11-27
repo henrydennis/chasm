@@ -12,8 +12,8 @@ internal fun TagTypeValidator(
     context: CoreTypeValidationContext,
     type: TagType,
 ): Result<Unit, ModuleValidatorError> = binding {
-    if (type.functionType.results.types
-            .isNotEmpty()
+    if (!context.stackSwitchingEnabled &&
+        type.functionType.results.types.isNotEmpty()
     ) {
         Err(TagValidatorError.InvalidTagType).bind()
     }

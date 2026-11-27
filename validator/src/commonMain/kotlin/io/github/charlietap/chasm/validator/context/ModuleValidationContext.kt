@@ -5,6 +5,7 @@ import com.github.michaelbull.result.toResultOr
 import io.github.charlietap.chasm.ast.module.Index
 import io.github.charlietap.chasm.ast.module.Module
 import io.github.charlietap.chasm.config.ModuleConfig
+import io.github.charlietap.chasm.config.Proposal
 import io.github.charlietap.chasm.type.DefinedType
 import io.github.charlietap.chasm.type.GlobalType
 import io.github.charlietap.chasm.type.MemoryType
@@ -78,6 +79,9 @@ internal class ModuleValidationContext private constructor(
 
     override val definedTypeCount: Int
         get() = definedTypesValidated
+
+    override val stackSwitchingEnabled: Boolean
+        get() = Proposal.StackSwitching in config.proposals
 
     override var limitsMaximum: ULong
         get() = typeContext.limitsMaximum

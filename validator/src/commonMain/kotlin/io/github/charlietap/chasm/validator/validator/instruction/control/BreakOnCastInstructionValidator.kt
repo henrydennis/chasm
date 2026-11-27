@@ -4,10 +4,12 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import io.github.charlietap.chasm.ast.instruction.ControlInstruction
+import io.github.charlietap.chasm.type.AbstractHeapType
 import io.github.charlietap.chasm.type.ReferenceType
 import io.github.charlietap.chasm.type.ValueType
 import io.github.charlietap.chasm.type.differ.ReferenceTypeDiffer
 import io.github.charlietap.chasm.type.differ.TypeDiffer
+import io.github.charlietap.chasm.type.extremas.TopOfHeapType
 import io.github.charlietap.chasm.type.matching.ReferenceTypeMatcher
 import io.github.charlietap.chasm.type.matching.TypeMatcher
 import io.github.charlietap.chasm.type.matching.ValueTypeMatcher
@@ -45,6 +47,10 @@ internal inline fun BreakOnCastInstructionValidator(
 
     referenceTypeValidator(context, instruction.srcReferenceType).bind()
     referenceTypeValidator(context, instruction.dstReferenceType).bind()
+
+    if (TopOfHeapType(instruction.dstReferenceType.heapType, context.types) == AbstractHeapType.Cont) {
+        Err(TypeValidatorError.TypeMismatch).bind()
+    }
 
     if (!referenceTypeMatcher(instruction.dstReferenceType, instruction.srcReferenceType, context)) {
         Err(TypeValidatorError.TypeMismatch).bind()

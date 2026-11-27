@@ -11,5 +11,8 @@ internal interface CoreTypeValidationContext : TypeMatcherContext {
 
     val definedTypeCount: Int
 
+    val stackSwitchingEnabled: Boolean
+        get() = false
+
     fun definedType(index: Int): Result<DefinedType, ModuleValidatorError>
 }
