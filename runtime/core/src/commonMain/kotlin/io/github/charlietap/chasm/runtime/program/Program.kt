@@ -111,6 +111,8 @@ class Program
 
 const val EXIT_IP = Int.MAX_VALUE
 
+const val SUSPEND_IP = -1
+
 private const val INITIAL_CAPACITY = 256
 
 private val unavailableInstruction = DispatchableInstruction { _, _, _ ->

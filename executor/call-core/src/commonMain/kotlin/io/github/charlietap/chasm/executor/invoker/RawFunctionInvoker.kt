@@ -52,6 +52,42 @@ fun RawFunctionInvoker(
     }
 }
 
+suspend fun RawFunctionInvokerSuspending(
+    config: RuntimeConfig,
+    store: Store,
+    instance: ModuleInstance,
+    function: FunctionInstance,
+    words: LongArray,
+): Result<Unit, InvocationError> {
+
+    val invocationDepth = store.invocationDepth
+    if (invocationDepth == 0) {
+        store.heap.clearPendingException()
+    }
+
+    store.invocationDepth = invocationDepth + 1
+
+    return try {
+        val interrupt = store.interrupt
+        if (!interrupt.enabled) {
+            invokeRawSuspending(config, store, instance, function, words)
+        } else {
+            val depth = interrupt.depth
+            if (depth == 0 && interrupt.requested) {
+                interrupt.requested = false
+            }
+            interrupt.depth = depth + 1
+            try {
+                invokeRawSuspending(config, store, instance, function, words)
+            } finally {
+                interrupt.depth = depth
+            }
+        }
+    } finally {
+        store.invocationDepth = invocationDepth
+    }
+}
+
 @OptIn(UnsafeHostApi::class)
 private fun invokeRaw(
     config: RuntimeConfig,
@@ -92,5 +128,59 @@ private fun invokeRaw(
             }
         }
         is FunctionInstance.WasmFunction -> RawWasmFunctionExecutor(config, store, function, words)
+    }
+}
+
+@OptIn(UnsafeHostApi::class)
+private suspend fun invokeRawSuspending(
+    config: RuntimeConfig,
+    store: Store,
+    instance: ModuleInstance,
+    function: FunctionInstance,
+    words: LongArray,
+): Result<Unit, InvocationError> {
+    return when (function) {
+        is FunctionInstance.HostFunction -> {
+
+            val parameterCount = function.functionType.params.types.size
+            val resultCount = function.functionType.results.types.size
+            val stack = hostValueStack(maxOf(parameterCount, resultCount), store.maxStackSlots)
+                ?: return Err(InvocationError.CallStackExhausted)
+            stack.push(words.copyOf(parameterCount))
+            stack.reserveDepth(resultCount)
+            val context = ExecutionContext(stack, store, instance, config)
+            context.allowSuspend = true
+
+            try {
+                store.withLiveStack(stack) {
+                    context.withHostCallbackScope {
+                        context(stack.unsafeElements(), instance, context) {
+                            function.function.invoke(0, 0)
+                        }
+                    }
+
+                    val suspension = context.pendingSuspension
+                    if (suspension != null) {
+                        context.pendingSuspension = null
+                        context.withHostCallbackScope {
+                            suspension.resume()
+                        }
+                    }
+
+                    stack.unsafeElements().copyInto(words, 0, 0, resultCount)
+                    Ok(Unit)
+                }
+            } catch (_: HostRaisedWasmException) {
+                Err(InvocationError.ThrownException)
+            } catch (e: HostFunctionException) {
+                Err(InvocationError.HostFunctionError(e.reason))
+            } catch (_: GuestHeapOutOfMemoryException) {
+                Err(InvocationError.GuestHeapOutOfMemory)
+            } finally {
+                context.pendingSuspension = null
+                context.allowSuspend = false
+            }
+        }
+        is FunctionInstance.WasmFunction -> RawWasmFunctionExecutorSuspending(config, store, function, words)
     }
 }

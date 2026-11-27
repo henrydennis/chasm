@@ -7,6 +7,7 @@ import com.github.michaelbull.result.Result
 import io.github.charlietap.chasm.InternalChasmApi
 import io.github.charlietap.chasm.config.RuntimeConfig
 import io.github.charlietap.chasm.executor.invoker.thread.ThreadInvocation
+import io.github.charlietap.chasm.executor.invoker.thread.ThreadInvocationSuspending
 import io.github.charlietap.chasm.executor.invoker.thread.traceableTrap
 import io.github.charlietap.chasm.gc.GuestHeapOutOfMemoryException
 import io.github.charlietap.chasm.runtime.error.InvocationError
@@ -51,6 +52,42 @@ fun RawWasmFunctionExecutor(
     val parameterCount = function.functionType.params.types.size
 
     return ThreadInvocation(
+        config = config,
+        store = store,
+        instance = function,
+        nested = interpreter,
+        arguments = { vstack ->
+            var index = 0
+            while (index < parameterCount) {
+                vstack.setFrameSlot(index, words[index])
+                index++
+            }
+        },
+        run = { entryIp, context -> runEntry(interpreter, config, entryIp, context) },
+        trap = { exception, vstack -> entryTrap(config, store, vstack, exception) },
+        results = { vstack, count ->
+            var index = count - 1
+            while (index >= 0) {
+                words[index] = vstack.pop()
+                index--
+            }
+        },
+    )
+}
+
+@OptIn(InternalChasmApi::class)
+suspend fun RawWasmFunctionExecutorSuspending(
+    config: RuntimeConfig,
+    store: Store,
+    function: FunctionInstance.WasmFunction,
+    words: LongArray,
+): Result<Unit, InvocationError> {
+
+    val interpreter = store.interpreter
+    if (interpreter == null && function.callStrategy.compiledEntry == null) return Err(InvocationError.InterpreterUnavailable)
+    val parameterCount = function.functionType.params.types.size
+
+    return ThreadInvocationSuspending(
         config = config,
         store = store,
         instance = function,

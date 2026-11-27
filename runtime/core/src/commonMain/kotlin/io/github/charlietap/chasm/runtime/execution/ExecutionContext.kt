@@ -83,6 +83,15 @@ data class ExecutionContext(
     var resumeHostReferences: Array<Any?>? = null
 
     @JvmField
+    var interpreterResumeIp: Int = -1
+
+    @JvmField
+    var interpreterReturnResultCount: Int = 0
+
+    @JvmField
+    var interpreterReturnActivationHeaderSlot: Int = -1
+
+    @JvmField
     var nestedInterpreter: NestedInterpreter? = null
 
     override val references: HostReferences

@@ -3,6 +3,7 @@ package io.github.charlietap.chasm.embedding.internal
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.fold
 import com.github.michaelbull.result.getOrElse
+import io.github.charlietap.chasm.ExperimentalChasmApi
 import io.github.charlietap.chasm.embedding.engine.Engine
 import io.github.charlietap.chasm.embedding.error.ExecutionError
 import io.github.charlietap.chasm.embedding.error.InstantiationError
@@ -29,9 +30,11 @@ import io.github.charlietap.chasm.embedding.value.NumberValue
 import io.github.charlietap.chasm.embedding.value.ReferenceValue
 import io.github.charlietap.chasm.embedding.value.VectorValue
 import io.github.charlietap.chasm.executor.invoker.RawFunctionInvoker
+import io.github.charlietap.chasm.executor.invoker.RawFunctionInvokerSuspending
 import io.github.charlietap.chasm.host.HostFunction
 import io.github.charlietap.chasm.host.HostGcFieldInfo
 import io.github.charlietap.chasm.host.HostGcType
+import io.github.charlietap.chasm.host.SuspendHostFunction
 import io.github.charlietap.chasm.host.UnsafeHostApi
 import io.github.charlietap.chasm.parallel.ParallelTaskExecutor
 import io.github.charlietap.chasm.reference.ArrayReference
@@ -127,6 +130,17 @@ internal class InterpreterEngine(
         storeRuntime.liveStore()
 
         return handles.function(storeRuntime.function(type, hostCalls.adapt(type, function)).address)
+    }
+
+    @OptIn(ExperimentalChasmApi::class)
+    override fun suspendFunction(
+        type: FunctionType,
+        function: SuspendHostFunction,
+    ): Function {
+
+        storeRuntime.liveStore()
+
+        return handles.function(storeRuntime.function(type, hostCalls.adaptSuspending(type, function)).address)
     }
 
     override fun memory(type: MemoryType): Memory {
@@ -327,6 +341,72 @@ internal class InterpreterEngine(
         references: Array<Any?>,
     ): ChasmResult<Unit, InvocationError> {
         return invokeUnboxed(function, words, references)
+    }
+
+    override suspend fun invokeSuspending(
+        function: PreparedFunction,
+        args: List<ExecutionValue>,
+    ): ChasmResult<List<ExecutionValue>, InvocationError> {
+
+        val mismatch = argumentMismatch(function.type, args)
+        if (mismatch != null) {
+            return ChasmResult.Error(ExecutionError.Rejected(mismatch))
+        }
+
+        val call = preparedCall(function)
+        val words = LongArray(function.slots)
+        val references = if (call.usesReferenceLane) {
+            arrayOfNulls<Any>(function.slots)
+        } else {
+            NO_REFERENCES
+        }
+        val rejection = values.lower(args, words, references)
+        if (rejection != null) {
+            return ChasmResult.Error(ExecutionError.Rejected(rejection))
+        }
+
+        return when (val result = invokeUnboxedSuspending(function, words, references)) {
+            is ChasmResult.Success -> ChasmResult.Success(values.raise(function.type.results.types, words, references))
+            is ChasmResult.Error -> result
+        }
+    }
+
+    override suspend fun invokeUnboxedSuspending(
+        function: PreparedFunction,
+        words: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+
+        val call = preparedCall(function)
+        val rejection = rejection(call, function.slots, words, references)
+        if (rejection != null) {
+            return ChasmResult.Error(ExecutionError.Rejected(rejection))
+        }
+
+        if (call.parameterSlots.isEmpty) {
+            return executeSuspending(call, words, references)
+        }
+
+        val marker = heap.beginScope(0)
+        try {
+
+            val failure = encodeArguments(call, words, references)
+            if (failure != null) {
+                return failure
+            }
+
+            return executeSuspending(call, words, references)
+        } finally {
+            heap.endScope(marker)
+        }
+    }
+
+    override suspend fun unsafeInvokeUnboxedSuspending(
+        function: PreparedFunction,
+        words: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+        return invokeUnboxedSuspending(function, words, references)
     }
 
     override fun sizeMemory(memory: Memory): Int {
@@ -918,6 +998,30 @@ internal class InterpreterEngine(
         val instance = call.instance
         val result = try {
             RawFunctionInvoker(instance.config, storeRuntime.liveStore(), instance.module, call.function, words)
+        } catch (exception: InvocationException) {
+            Err(exception.error)
+        }
+
+        return result.fold(
+            success = { _ ->
+                decodeResults(call, words, references)
+                SUCCESS
+            },
+            failure = { error ->
+                ChasmResult.Error(storeRuntime.invocationError(error) { pendingException() })
+            },
+        )
+    }
+
+    private suspend fun executeSuspending(
+        call: PreparedCall,
+        words: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+
+        val instance = call.instance
+        val result = try {
+            RawFunctionInvokerSuspending(instance.config, storeRuntime.liveStore(), instance.module, call.function, words)
         } catch (exception: InvocationException) {
             Err(exception.error)
         }
