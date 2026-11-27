@@ -27,3 +27,21 @@ fun WasmFunctionCall(
     vstack.activateFrame(calleeFp, strategy.frameSlots)
     return strategy.entryIp
 }
+
+@InternalChasmApi
+fun activateContinuationWasmFrame(
+    vstack: ValueStack,
+    strategy: WasmFunctionCallStrategy,
+    stackBase: Int,
+    arguments: LongArray,
+    activationHeader: Long,
+): Int {
+    vstack.ensureCapacity(stackBase + strategy.frameSlots)
+    for (index in arguments.indices) {
+        vstack.setFrameSlot(stackBase, index, arguments[index])
+    }
+    initializeLocals(vstack, strategy, stackBase)
+    vstack.writeActivationHeader(stackBase, strategy.interfaceSlotCount, activationHeader)
+    vstack.activateFrame(stackBase, strategy.frameSlots)
+    return strategy.entryIp
+}

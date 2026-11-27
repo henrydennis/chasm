@@ -173,6 +173,10 @@ private class DeclarationCallWriter(
                 fieldType(composite.arrayType.fieldType)
                 call("arrayComposite")
             }
+            is CompositeType.Cont -> {
+                heapType(composite.functionType)
+                call("contComposite")
+            }
         }
         call("subType", subType is SubType.Final, subType.superTypes.size)
     }

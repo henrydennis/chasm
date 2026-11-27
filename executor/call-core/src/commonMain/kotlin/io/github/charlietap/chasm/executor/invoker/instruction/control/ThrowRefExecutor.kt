@@ -67,7 +67,19 @@ fun ThrowRefValueExecutor(
             }
             previousIp = ip
         }
-        val returnIp = vstack.unwindCallerFrame(interfaceSlotCount, allowNestedExit = context.compiledCallDepth > 0)
+        val promptReturnIp = program.promptReturnIp
+        val returnIp = vstack.unwindCallerFrame(
+            interfaceSlotCount,
+            allowNestedExit = context.compiledCallDepth > 0,
+            promptReturnIp = promptReturnIp,
+        )
+        if (promptReturnIp >= 0 && returnIp == promptReturnIp) {
+            val prompt = context.promptStack.removeAt(context.promptStack.lastIndex)
+            vstack.activateFrameAtDepth(prompt.callerFp, prompt.callerSp)
+            ip = prompt.resumeCallSiteIp
+            previousIp = -1
+            continue
+        }
         if (returnIp == EXIT_IP) escapeException(heap, ref)
         ip = exceptionalCallSiteIp(returnIp, resultCount)
     }

@@ -26,6 +26,8 @@ internal fun HeapType.toCir(): CirHeapType = when (this) {
     AbstractHeapType.NoExtern -> CirHeapType.Abstract(CirAbstractHeapType.NoExtern)
     AbstractHeapType.Exception -> CirHeapType.Abstract(CirAbstractHeapType.Exception)
     AbstractHeapType.NoException -> CirHeapType.Abstract(CirAbstractHeapType.NoException)
+    AbstractHeapType.Cont -> CirHeapType.Abstract(CirAbstractHeapType.Cont)
+    AbstractHeapType.NoCont -> CirHeapType.Abstract(CirAbstractHeapType.NoCont)
     AbstractHeapType.Any -> CirHeapType.Abstract(CirAbstractHeapType.Any)
     AbstractHeapType.Eq -> CirHeapType.Abstract(CirAbstractHeapType.Eq)
     AbstractHeapType.Struct -> CirHeapType.Abstract(CirAbstractHeapType.Struct)

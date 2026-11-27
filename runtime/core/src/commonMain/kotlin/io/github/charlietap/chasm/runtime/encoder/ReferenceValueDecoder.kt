@@ -29,6 +29,7 @@ fun ReferenceValueDecoder(
         RV_TYPE_FUNCTION -> ReferenceValue.Function(Address.Function(value.toInt()))
         RV_TYPE_HOST -> ReferenceValue.Host(Address.Host(value.toInt()))
         RV_TYPE_EXCEPTION -> ReferenceValue.Exception(Address.Exception(value.toInt()))
+        RV_TYPE_CONTINUATION -> ReferenceValue.Continuation(Address.Continuation(value.toInt()))
         RV_TYPE_EXTERN -> ReferenceValue.Extern(ReferenceValueDecoder(value, heapTypeDecoder))
         else -> throw InvocationException(InvocationError.ReferenceValueExpected)
     }

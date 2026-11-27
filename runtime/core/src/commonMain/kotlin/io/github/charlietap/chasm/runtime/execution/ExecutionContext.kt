@@ -16,6 +16,7 @@ import io.github.charlietap.chasm.runtime.host.RawHostModuleInstance
 import io.github.charlietap.chasm.runtime.host.RawHostResources
 import io.github.charlietap.chasm.runtime.instance.FunctionInstance
 import io.github.charlietap.chasm.runtime.instance.ModuleInstance
+import io.github.charlietap.chasm.runtime.instance.PromptRecord
 import io.github.charlietap.chasm.runtime.stack.ValueStack
 import io.github.charlietap.chasm.runtime.store.Store
 import kotlin.jvm.JvmField
@@ -63,6 +64,8 @@ data class ExecutionContext(
 
     @JvmField
     var nestedInterpreter: NestedInterpreter? = null
+
+    val promptStack: ArrayList<PromptRecord> = ArrayList()
 
     override val references: HostReferences
         get() = heap

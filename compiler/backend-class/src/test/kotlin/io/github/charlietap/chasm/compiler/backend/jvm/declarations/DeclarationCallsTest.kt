@@ -235,6 +235,7 @@ private fun sameSubType(
             ec.structType.fields.zip(ac.structType.fields).forEach { (ef, af) -> sameField(ef, af, ei, ai) }
         }
         is CompositeType.Array -> sameField(ec.arrayType.fieldType, (a.compositeType as CompositeType.Array).arrayType.fieldType, ei, ai)
+        is CompositeType.Cont -> sameHeap(ec.functionType, (a.compositeType as CompositeType.Cont).functionType, ei, ai)
     }
 }
 

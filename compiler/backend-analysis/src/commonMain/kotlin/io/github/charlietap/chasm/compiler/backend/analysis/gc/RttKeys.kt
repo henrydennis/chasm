@@ -85,6 +85,10 @@ class RttKeys(
                     add(ARRAY)
                     fieldType(type.arrayType.fieldType)
                 }
+                is CompositeType.Cont -> {
+                    add(CONT)
+                    heapType(type.functionType)
+                }
             }
         }
 
@@ -154,6 +158,8 @@ class RttKeys(
                 AbstractHeapType.I31 -> 11
                 AbstractHeapType.None -> 12
                 is AbstractHeapType.Bottom -> 13
+                AbstractHeapType.Cont -> 14
+                AbstractHeapType.NoCont -> 15
             }
         }
 
@@ -197,5 +203,6 @@ class RttKeys(
         const val ABSTRACT = 16
         const val INTERNAL = 17
         const val EXTERNAL = 18
+        const val CONT = 19
     }
 }

@@ -23,5 +23,13 @@ internal fun lowerControlInstruction(
         is ControlInstruction.Throw -> context.lowerThrow(instruction)
         is ControlInstruction.ThrowRefS -> context.lowerThrowRef(instruction)
         ControlInstruction.Unreachable -> context.trap(UNREACHABLE)
+        is ControlInstruction.ContNew,
+        is ControlInstruction.ContBind,
+        is ControlInstruction.Suspend,
+        is ControlInstruction.Resume,
+        is ControlInstruction.ResumeThrow,
+        is ControlInstruction.ResumeThrowRef,
+        is ControlInstruction.Switch,
+        -> throw Unsupported(instruction::class.simpleName ?: "stack switching")
     }
 }

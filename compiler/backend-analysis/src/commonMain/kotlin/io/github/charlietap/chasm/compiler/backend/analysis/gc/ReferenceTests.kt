@@ -47,7 +47,13 @@ class ReferenceTests(
             AbstractHeapType.I31 -> ReferenceTest.InstanceOf(I31_REFERENCE)
             AbstractHeapType.Func -> ReferenceTest.InstanceOf(MANAGED_FUNCTION)
             AbstractHeapType.Exception -> ReferenceTest.InstanceOf(WASM_EXCEPTION_TYPE)
-            AbstractHeapType.None, AbstractHeapType.NoFunc, AbstractHeapType.NoExtern, AbstractHeapType.NoException -> ReferenceTest.Never
+            AbstractHeapType.None,
+            AbstractHeapType.NoFunc,
+            AbstractHeapType.NoExtern,
+            AbstractHeapType.NoException,
+            AbstractHeapType.Cont,
+            AbstractHeapType.NoCont,
+            -> ReferenceTest.Never
         }
     }
 

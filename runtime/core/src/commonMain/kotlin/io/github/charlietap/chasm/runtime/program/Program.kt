@@ -16,6 +16,16 @@ class Program
 
         private var exceptionTables: ArrayList<FunctionExceptionTable>? = null
 
+        var promptReturnIp: Int = -1
+            private set
+
+        fun ensurePromptReturn(instruction: DispatchableInstruction): Int {
+            if (promptReturnIp < 0) {
+                promptReturnIp = append(instruction)
+            }
+            return promptReturnIp
+        }
+
         val hasExceptionHandlers: Boolean
             get() = exceptionTables != null
 
@@ -92,6 +102,9 @@ class Program
             exceptionTables?.let { tables ->
                 while (tables.isNotEmpty() && tables.last().endIp > size) tables.removeAt(tables.lastIndex)
                 if (tables.isEmpty()) exceptionTables = null
+            }
+            if (promptReturnIp >= size) {
+                promptReturnIp = -1
             }
             this.size = size
         }

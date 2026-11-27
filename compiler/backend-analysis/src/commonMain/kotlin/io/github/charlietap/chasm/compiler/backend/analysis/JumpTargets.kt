@@ -28,6 +28,17 @@ fun Instruction.jumpTargets(): IntArray {
         return targets
     }
 
+    val handlers = when (this) {
+        is ControlInstruction.Resume -> handlers
+        is ControlInstruction.ResumeThrow -> handlers
+        is ControlInstruction.ResumeThrowRef -> handlers
+        else -> null
+    }
+    if (handlers != null) {
+        val labelTargets = handlers.filterIsInstance<ControlInstruction.ResumeHandler.OnLabel>()
+        return if (labelTargets.isEmpty()) NO_TARGETS else IntArray(labelTargets.size) { labelTargets[it].targetOffset }
+    }
+
     val target = jumpTarget()
     return if (target < 0) NO_TARGETS else intArrayOf(target)
 }
@@ -126,6 +137,13 @@ private fun ControlInstruction.fallsThrough(): Boolean {
         is ControlInstruction.CallIndirectI,
         is ControlInstruction.CallIndirectS,
         is ControlInstruction.CallRefS,
+        is ControlInstruction.ContNew,
+        is ControlInstruction.ContBind,
+        is ControlInstruction.Suspend,
+        is ControlInstruction.Resume,
+        is ControlInstruction.ResumeThrow,
+        is ControlInstruction.ResumeThrowRef,
+        is ControlInstruction.Switch,
         -> true
     }
 }

@@ -29,10 +29,11 @@ internal fun InstructionLinker(
     else -> when {
         opcode < 665 -> linkInstructions13(instruction, opcode, context)
         opcode < CONTROL_OPCODES -> linkReferenceInstruction(instruction as ReferenceInstruction, context)
-        opcode < ADMIN_OPCODES -> linkControlInstruction(instruction as ControlInstruction, context)
+        opcode < ADMIN_OPCODES || opcode >= STACK_SWITCHING_OPCODES -> linkControlInstruction(instruction as ControlInstruction, context)
         else -> linkAdminInstruction(instruction as AdminInstruction, opcode, context)
     }
 }
 
 private const val CONTROL_OPCODES = 672
 private const val ADMIN_OPCODES = 684
+private const val STACK_SWITCHING_OPCODES = 708

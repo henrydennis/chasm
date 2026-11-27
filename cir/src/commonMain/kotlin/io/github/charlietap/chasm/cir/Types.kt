@@ -42,6 +42,8 @@ enum class AbstractHeapType(
     NoExtern("noextern"),
     Exception("exn"),
     NoException("noexn"),
+    Cont("cont"),
+    NoCont("nocont"),
     Any("any"),
     Eq("eq"),
     Struct("struct"),

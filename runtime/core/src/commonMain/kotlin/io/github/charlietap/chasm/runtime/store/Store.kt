@@ -7,6 +7,7 @@ import io.github.charlietap.chasm.config.RuntimeConfig
 import io.github.charlietap.chasm.runtime.execution.AllocationMeter
 import io.github.charlietap.chasm.runtime.execution.NestedInterpreter
 import io.github.charlietap.chasm.runtime.heap.WasmHeap
+import io.github.charlietap.chasm.runtime.instance.ContinuationInstance
 import io.github.charlietap.chasm.runtime.instance.DataInstance
 import io.github.charlietap.chasm.runtime.instance.ElementInstance
 import io.github.charlietap.chasm.runtime.instance.FunctionInstance
@@ -25,6 +26,7 @@ class Store(
     val globals: MutableList<GlobalInstance> = [],
     val elements: MutableList<ElementInstance> = [],
     val data: MutableList<DataInstance> = [],
+    val continuations: MutableList<ContinuationInstance> = [],
     val program: Program = Program(),
     val config: RuntimeConfig = RuntimeConfig(),
     val heap: WasmHeap = WasmHeap(config.limits.memory.gcHeap?.value),

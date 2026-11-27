@@ -3,6 +3,7 @@ package io.github.charlietap.chasm.runtime.ext
 import io.github.charlietap.chasm.runtime.encoder.HeapTypeEncoder
 import io.github.charlietap.chasm.runtime.encoder.RV_SHIFT_BITS
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_ARRAY
+import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_CONTINUATION
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_EXCEPTION
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_FUNCTION
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_HOST
@@ -42,4 +43,8 @@ inline fun ReferenceValue.Host.toLong(): Long {
 
 inline fun ReferenceValue.Exception.toLong(): Long {
     return (this.address.address.toLong() shl RV_SHIFT_BITS) or RV_TYPE_EXCEPTION
+}
+
+inline fun ReferenceValue.Continuation.toLong(): Long {
+    return (this.address.address.toLong() shl RV_SHIFT_BITS) or RV_TYPE_CONTINUATION
 }

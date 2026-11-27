@@ -93,7 +93,7 @@ class StoragePlansTest {
                 when (types[index].recursiveType.subTypes[types[index].recursiveTypeIndex].compositeType) {
                     is CompositeType.Struct -> "$index ${layout(plans.struct(index))}"
                     is CompositeType.Array -> "$index ${simpleName(plans.array(index).className)} ${plans.array(index).elementShift}"
-                    is CompositeType.Function -> null
+                    is CompositeType.Function, is CompositeType.Cont -> null
                 }
             } catch (unsupported: UnsupportedShape) {
                 "$index unsupported"

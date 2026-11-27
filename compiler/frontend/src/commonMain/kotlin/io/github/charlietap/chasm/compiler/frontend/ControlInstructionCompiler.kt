@@ -151,6 +151,13 @@ internal fun compileControlInstruction(
         is ControlInstruction.Throw -> compileThrow(state, instruction)
         is ControlInstruction.ThrowRef -> compileThrowRef(state)
         is ControlInstruction.TryTable -> enterTryTable(state, instruction)
+        is ControlInstruction.ContNew -> compileContNew(state, instruction)
+        is ControlInstruction.ContBind -> compileContBind(state, instruction)
+        is ControlInstruction.Suspend -> compileSuspend(state, instruction)
+        is ControlInstruction.Resume -> compileResume(state, instruction)
+        is ControlInstruction.ResumeThrow -> compileResumeThrow(state, instruction)
+        is ControlInstruction.ResumeThrowRef -> compileResumeThrowRef(state, instruction)
+        is ControlInstruction.Switch -> compileSwitch(state, instruction)
     }
 }
 
@@ -849,7 +856,7 @@ private fun completeCallResults(
     }
 }
 
-private fun FunctionCompilationContext.target(depth: Int): BlockContext {
+internal fun FunctionCompilationContext.target(depth: Int): BlockContext {
     check(depth >= 0)
     val controlIndex = controls.lastIndex - depth
     if (controlIndex >= 0) {

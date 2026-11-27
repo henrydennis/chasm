@@ -9,6 +9,7 @@ import io.github.charlietap.chasm.reference.StructReference
 import io.github.charlietap.chasm.runtime.encoder.HeapTypeEncoder
 import io.github.charlietap.chasm.runtime.encoder.RV_SHIFT_BITS
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_ARRAY
+import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_CONTINUATION
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_EXCEPTION
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_EXTERN
 import io.github.charlietap.chasm.runtime.encoder.RV_TYPE_FUNCTION
@@ -280,6 +281,7 @@ internal class InterpreterReferenceCodec(
                 val definedType = heapType.definedType
                 when (definedType.recursiveType.subTypes[definedType.recursiveTypeIndex].compositeType) {
                     is CompositeType.Function -> AbstractHeapType.NoFunc
+                    is CompositeType.Cont -> AbstractHeapType.NoCont
                     is CompositeType.Struct, is CompositeType.Array -> AbstractHeapType.None
                 }
             }
@@ -293,6 +295,7 @@ internal class InterpreterReferenceCodec(
             AbstractHeapType.Func -> tagBit(RV_TYPE_FUNCTION)
             AbstractHeapType.Extern -> tagBit(RV_TYPE_EXTERN)
             AbstractHeapType.Exception -> tagBit(RV_TYPE_EXCEPTION)
+            AbstractHeapType.Cont -> tagBit(RV_TYPE_CONTINUATION)
             AbstractHeapType.Any -> tagBit(RV_TYPE_I31) or tagBit(RV_TYPE_STRUCT) or tagBit(RV_TYPE_ARRAY) or tagBit(RV_TYPE_HOST)
             AbstractHeapType.Eq -> tagBit(RV_TYPE_I31) or tagBit(RV_TYPE_STRUCT) or tagBit(RV_TYPE_ARRAY)
             AbstractHeapType.Struct -> tagBit(RV_TYPE_STRUCT)

@@ -143,4 +143,137 @@ sealed class ControlInstruction : Instruction() {
             opcode = 683
         }
     }
+
+    sealed interface ResumeHandler {
+
+        val tagIndex: TagIndex
+
+        @CirTag("on_label")
+        class OnLabel(
+            override val tagIndex: TagIndex,
+            val targetOffset: Int,
+            val targetSlots: IntArray,
+            val stackSlotCount: Int,
+        ) : ResumeHandler {
+            override fun equals(other: Any?): Boolean =
+                this === other || (
+                    other is OnLabel &&
+                        tagIndex == other.tagIndex &&
+                        targetOffset == other.targetOffset &&
+                        targetSlots.contentEquals(other.targetSlots) &&
+                        stackSlotCount == other.stackSlotCount
+                )
+
+            override fun hashCode(): Int {
+                var result = tagIndex.hashCode()
+                result = 31 * result + targetOffset
+                result = 31 * result + targetSlots.contentHashCode()
+                result = 31 * result + stackSlotCount
+                return result
+            }
+        }
+
+        @CirTag("on_switch")
+        data class OnSwitch(
+            override val tagIndex: TagIndex,
+        ) : ResumeHandler
+    }
+
+    @CirTag("control.cont_new")
+    data class ContNew(
+        val type: TypeIndex,
+        val functionSlot: Int,
+        val destinationSlot: Int,
+    ) : ControlInstruction() {
+        init {
+            opcode = 708
+        }
+    }
+
+    @CirTag("control.cont_bind")
+    data class ContBind(
+        val inputType: TypeIndex,
+        val outputType: TypeIndex,
+        val continuationSlot: Int,
+        val firstArgumentSlot: Int,
+        val argumentCount: Int,
+        val destinationSlot: Int,
+    ) : ControlInstruction() {
+        init {
+            opcode = 709
+        }
+    }
+
+    @CirTag("control.suspend")
+    data class Suspend(
+        val tagIndex: TagIndex,
+        val firstPayloadSlot: Int,
+        val payloadCount: Int,
+        val firstResultSlot: Int,
+        val resultCount: Int,
+    ) : ControlInstruction() {
+        init {
+            opcode = 710
+        }
+    }
+
+    @CirTag("control.resume")
+    data class Resume(
+        val type: TypeIndex,
+        val continuationSlot: Int,
+        val firstArgumentSlot: Int,
+        val argumentCount: Int,
+        val firstResultSlot: Int,
+        val resultCount: Int,
+        val handlers: List<ResumeHandler>,
+    ) : ControlInstruction() {
+        init {
+            opcode = 711
+        }
+    }
+
+    @CirTag("control.resume_throw")
+    data class ResumeThrow(
+        val type: TypeIndex,
+        val exceptionTag: TagIndex,
+        val continuationSlot: Int,
+        val firstPayloadSlot: Int,
+        val payloadCount: Int,
+        val firstResultSlot: Int,
+        val resultCount: Int,
+        val handlers: List<ResumeHandler>,
+    ) : ControlInstruction() {
+        init {
+            opcode = 712
+        }
+    }
+
+    @CirTag("control.resume_throw_ref")
+    data class ResumeThrowRef(
+        val type: TypeIndex,
+        val continuationSlot: Int,
+        val exceptionSlot: Int,
+        val firstResultSlot: Int,
+        val resultCount: Int,
+        val handlers: List<ResumeHandler>,
+    ) : ControlInstruction() {
+        init {
+            opcode = 713
+        }
+    }
+
+    @CirTag("control.switch")
+    data class Switch(
+        val type: TypeIndex,
+        val tagIndex: TagIndex,
+        val continuationSlot: Int,
+        val firstArgumentSlot: Int,
+        val argumentCount: Int,
+        val firstResultSlot: Int,
+        val resultCount: Int,
+    ) : ControlInstruction() {
+        init {
+            opcode = 714
+        }
+    }
 }

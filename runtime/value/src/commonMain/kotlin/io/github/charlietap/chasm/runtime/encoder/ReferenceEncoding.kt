@@ -21,3 +21,5 @@ const val RV_TYPE_HOST: Long = 6
 const val RV_TYPE_EXCEPTION: Long = 7
 
 const val RV_TYPE_EXTERN: Long = 8
+
+const val RV_TYPE_CONTINUATION: Long = 9

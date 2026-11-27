@@ -37,4 +37,7 @@ sealed interface Address {
 
     @JvmInline
     value class Host(override val address: Int) : Address
+
+    @JvmInline
+    value class Continuation(override val address: Int) : Address
 }

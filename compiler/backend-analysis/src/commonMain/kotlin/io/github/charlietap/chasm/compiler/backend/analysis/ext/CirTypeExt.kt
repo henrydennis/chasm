@@ -46,6 +46,8 @@ fun HeapType.toType(): TypeHeapType = when (this) {
         AbstractHeapType.Array -> TypeAbstractHeapType.Array
         AbstractHeapType.I31 -> TypeAbstractHeapType.I31
         AbstractHeapType.None -> TypeAbstractHeapType.None
+        AbstractHeapType.Cont -> TypeAbstractHeapType.Cont
+        AbstractHeapType.NoCont -> TypeAbstractHeapType.NoCont
     }
 }
 

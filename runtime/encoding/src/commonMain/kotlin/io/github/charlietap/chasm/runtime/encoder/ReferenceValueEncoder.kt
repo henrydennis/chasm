@@ -36,6 +36,9 @@ fun ReferenceValueEncoder(
     is ReferenceValue.Exception -> {
         (value.address.address.toLong() shl RV_SHIFT_BITS) or RV_TYPE_EXCEPTION
     }
+    is ReferenceValue.Continuation -> {
+        (value.address.address.toLong() shl RV_SHIFT_BITS) or RV_TYPE_CONTINUATION
+    }
     is ReferenceValue.Extern -> {
         (ReferenceValueEncoder(value.referenceValue, heapTypeEncoder) shl RV_SHIFT_BITS) or RV_TYPE_EXTERN
     }

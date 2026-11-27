@@ -8,10 +8,14 @@ import io.github.charlietap.chasm.compiler.frontend.IndirectCallTargets
 import io.github.charlietap.chasm.compiler.frontend.indirectCallTargets
 import io.github.charlietap.chasm.declarations.ModuleTypeResolver
 import io.github.charlietap.chasm.type.BlockType
+import io.github.charlietap.chasm.type.CompositeType
+import io.github.charlietap.chasm.type.ConcreteHeapType
 import io.github.charlietap.chasm.type.FunctionType
 import io.github.charlietap.chasm.type.GlobalType
+import io.github.charlietap.chasm.type.HeapType
 import io.github.charlietap.chasm.type.TableType
 import io.github.charlietap.chasm.type.TagType
+import io.github.charlietap.chasm.type.ext.asFunctionType
 
 internal class CompilerContext(
     val module: Module,
@@ -28,6 +32,34 @@ internal class CompilerContext(
     fun functionTypeAt(
         typeIndex: Int,
     ): FunctionType = types.functionType(Index.TypeIndex(typeIndex.toUInt()))
+
+    fun continuationFunctionTypeAt(
+        typeIndex: Int,
+    ): FunctionType {
+        val defined = types.definedType(Index.TypeIndex(typeIndex.toUInt()))
+        val cont = defined.asSubType.compositeType as CompositeType.Cont
+        return resolveFunctionType(cont.functionType)
+    }
+
+    fun continuationFunctionType(
+        heapType: HeapType,
+    ): FunctionType {
+        val defined = when (heapType) {
+            is ConcreteHeapType.Defined -> heapType.definedType
+            is ConcreteHeapType.TypeIndex -> types.definedType(Index.TypeIndex(heapType.index.toUInt()))
+            else -> error("expected concrete continuation heap type: $heapType")
+        }
+        val cont = defined.asSubType.compositeType as CompositeType.Cont
+        return resolveFunctionType(cont.functionType)
+    }
+
+    private fun resolveFunctionType(
+        heapType: ConcreteHeapType,
+    ): FunctionType = when (heapType) {
+        is ConcreteHeapType.Defined -> heapType.definedType.asSubType.compositeType.asFunctionType()
+        is ConcreteHeapType.TypeIndex -> types.functionType(Index.TypeIndex(heapType.index.toUInt()))
+        is ConcreteHeapType.RecursiveTypeIndex -> error("unclosed continuation function type")
+    }
 
     fun functionType(
         functionIndex: Int,

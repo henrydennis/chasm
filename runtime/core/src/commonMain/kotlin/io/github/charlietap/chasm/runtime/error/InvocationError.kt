@@ -182,6 +182,12 @@ sealed interface InvocationError : ModuleTrapError {
 
     data object Unreachable : InvocationError
 
+    data object NullContinuationReference : InvocationError
+
+    data object ContinuationAlreadyConsumed : InvocationError
+
+    data object UnhandledSuspension : InvocationError
+
     data object FunctionInconsistentWithType : InvocationError
 
     data class HostFunctionInconsistentWithType(

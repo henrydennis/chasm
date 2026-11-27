@@ -137,7 +137,9 @@ internal class BoxedValues : ValueBoxing {
             AbstractHeapType.Func, AbstractHeapType.NoFunc -> AbstractHeapType.NoFunc
             AbstractHeapType.Extern, AbstractHeapType.NoExtern -> AbstractHeapType.NoExtern
             AbstractHeapType.Exception, AbstractHeapType.NoException -> AbstractHeapType.NoException
+            AbstractHeapType.Cont, AbstractHeapType.NoCont -> AbstractHeapType.NoCont
             is ConcreteHeapType.Defined if isFunction(heapType) -> AbstractHeapType.NoFunc
+            is ConcreteHeapType.Defined if isContinuation(heapType) -> AbstractHeapType.NoCont
             else -> AbstractHeapType.None
         }
     }
@@ -147,5 +149,12 @@ internal class BoxedValues : ValueBoxing {
         val definedType = heapType.definedType
 
         return definedType.recursiveType.subTypes[definedType.recursiveTypeIndex].compositeType is CompositeType.Function
+    }
+
+    private fun isContinuation(heapType: ConcreteHeapType.Defined): Boolean {
+
+        val definedType = heapType.definedType
+
+        return definedType.recursiveType.subTypes[definedType.recursiveTypeIndex].compositeType is CompositeType.Cont
     }
 }

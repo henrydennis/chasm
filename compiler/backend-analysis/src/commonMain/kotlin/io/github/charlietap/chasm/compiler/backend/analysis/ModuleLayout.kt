@@ -72,6 +72,7 @@ object ModuleLayout {
         is CompositeType.Function -> "func " + function(type.functionType)
         is CompositeType.Struct -> type.structType.fields.joinToString(",", "struct (", ")", transform = ::field)
         is CompositeType.Array -> "array " + field(type.arrayType.fieldType)
+        is CompositeType.Cont -> "cont " + heap(type.functionType)
     }
 
     private fun field(
@@ -132,6 +133,8 @@ object ModuleLayout {
         AbstractHeapType.Array -> "array"
         AbstractHeapType.I31 -> "i31"
         AbstractHeapType.None -> "none"
+        AbstractHeapType.Cont -> "cont"
+        AbstractHeapType.NoCont -> "nocont"
         is AbstractHeapType.Bottom -> "bottom"
         is ConcreteHeapType.TypeIndex -> "t${type.index}"
         is ConcreteHeapType.Defined -> "t${type.definedType.typeIndex}"

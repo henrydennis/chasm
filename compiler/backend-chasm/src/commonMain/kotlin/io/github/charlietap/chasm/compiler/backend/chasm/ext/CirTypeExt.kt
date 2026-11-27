@@ -43,6 +43,8 @@ internal fun HeapType.toRuntime(): RuntimeHeapType = when (this) {
         AbstractHeapType.NoExtern -> RuntimeAbstractHeapType.NoExtern
         AbstractHeapType.Exception -> RuntimeAbstractHeapType.Exception
         AbstractHeapType.NoException -> RuntimeAbstractHeapType.NoException
+        AbstractHeapType.Cont -> RuntimeAbstractHeapType.Cont
+        AbstractHeapType.NoCont -> RuntimeAbstractHeapType.NoCont
         AbstractHeapType.Any -> RuntimeAbstractHeapType.Any
         AbstractHeapType.Eq -> RuntimeAbstractHeapType.Eq
         AbstractHeapType.Struct -> RuntimeAbstractHeapType.Struct

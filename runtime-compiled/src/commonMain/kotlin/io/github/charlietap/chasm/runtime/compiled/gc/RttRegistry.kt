@@ -97,7 +97,7 @@ class RttRegistry(
         val layout = when (val composite = subType.compositeType) {
             is CompositeType.Struct -> structLayout(index)
             is CompositeType.Array -> arrayLayout(composite.arrayType.fieldType)
-            is CompositeType.Function -> null
+            is CompositeType.Function, is CompositeType.Cont -> null
         }
 
         return Rtt(runtimeTypes[index].value, keys[index].intern(), managedStore.engine, supertype, layout)

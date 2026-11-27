@@ -1169,6 +1169,15 @@ class WasmHeap internal constructor(
             liveStack = liveStack.next
         }
 
+        var continuationIndex = 0
+        while (continuationIndex < store.continuations.size) {
+            val continuation = store.continuations[continuationIndex]
+            if (!continuation.consumed) {
+                continuation.visitGcRoots(rootMarker)
+            }
+            continuationIndex++
+        }
+
         heldRoots?.visit(rootMarker)
 
         var rootIndex = 0

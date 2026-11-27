@@ -56,7 +56,7 @@ class StoragePlans(
                 when (val composite = type.subType().compositeType) {
                     is CompositeType.Struct -> structsByIndex[index] = struct(type)
                     is CompositeType.Array -> arraysByIndex[index] = array(composite)
-                    is CompositeType.Function -> Unit
+                    is CompositeType.Function, is CompositeType.Cont -> Unit
                 }
             } catch (unsupported: UnsupportedShape) {
                 unsupportedByIndex[index] = unsupported.message.orEmpty()

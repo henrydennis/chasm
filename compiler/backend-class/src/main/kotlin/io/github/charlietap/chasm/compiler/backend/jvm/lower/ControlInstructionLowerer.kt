@@ -19,5 +19,13 @@ internal fun lowerControlInstruction(
         -> context.lowerTailCall(instruction)
         is ControlInstruction.Throw -> context.lowerThrow(instruction.exceptionTag, instruction.firstPayloadSlot)
         is ControlInstruction.ThrowRefS -> context.lowerThrowRef(instruction.exceptionSlot)
+        is ControlInstruction.ContNew,
+        is ControlInstruction.ContBind,
+        is ControlInstruction.Suspend,
+        is ControlInstruction.Resume,
+        is ControlInstruction.ResumeThrow,
+        is ControlInstruction.ResumeThrowRef,
+        is ControlInstruction.Switch,
+        -> throw Unsupported(instruction::class.simpleName ?: "stack switching")
     }
 }

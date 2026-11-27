@@ -455,6 +455,7 @@ class ValueStack(
     fun unwindCallerFrame(
         activationHeaderSlot: Int,
         allowNestedExit: Boolean = false,
+        promptReturnIp: Int = -1,
     ): Int {
         val calleeFp = fp
         val slot = calleeFp + activationHeaderSlot
@@ -464,13 +465,41 @@ class ValueStack(
         val header = elements[slot]
         val returnIp = activationReturnIp(header)
         val delta = activationCallerFrameDelta(header)
-        val invalidExit = if (allowNestedExit) delta < 0 || delta > calleeFp else delta != 0 || calleeFp != 0
-        if (if (returnIp == Int.MAX_VALUE) invalidExit else delta <= 0 || delta > calleeFp) {
+        val isBoundary = returnIp == Int.MAX_VALUE || (promptReturnIp >= 0 && returnIp == promptReturnIp)
+        val invalidExit = if (allowNestedExit || (promptReturnIp >= 0 && returnIp == promptReturnIp)) {
+            delta < 0 || delta > calleeFp
+        } else {
+            delta != 0 || calleeFp != 0
+        }
+        if (if (isBoundary) invalidExit else delta <= 0 || delta > calleeFp) {
             throw InvocationException(InvocationError.ProgramFinishedInconsistentState)
         }
         fp = calleeFp - delta
         sp = calleeFp
         return returnIp
+    }
+
+    fun slice(
+        fromIndex: Int,
+        toIndex: Int,
+    ): LongArray = elements.copyOfRange(fromIndex, toIndex)
+
+    fun restoreSlice(
+        destinationOffset: Int,
+        slice: LongArray,
+    ) {
+        ensureCapacity(destinationOffset + slice.size)
+        slice.copyInto(elements, destinationOffset = destinationOffset)
+    }
+
+    fun copyRange(
+        sourceOffset: Int,
+        destinationOffset: Int,
+        count: Int,
+    ) {
+        if (count == 0) return
+        ensureCapacity(destinationOffset + count)
+        elements.copyInto(elements, destinationOffset, sourceOffset, sourceOffset + count)
     }
 
     /**

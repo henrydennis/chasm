@@ -17,6 +17,8 @@ inline fun HeapTypeEncoder(
     AbstractHeapType.NoExtern -> HEAP_TYPE_NO_EXTERN
     AbstractHeapType.Exception -> HEAP_TYPE_EXCEPTION
     AbstractHeapType.NoException -> HEAP_TYPE_NO_EXCEPTION
+    AbstractHeapType.Cont -> HEAP_TYPE_CONT
+    AbstractHeapType.NoCont -> HEAP_TYPE_NO_CONT
     AbstractHeapType.Any -> HEAP_TYPE_ANY
     AbstractHeapType.Eq -> HEAP_TYPE_EQ
     AbstractHeapType.Struct -> HEAP_TYPE_STRUCT
@@ -44,6 +46,8 @@ inline fun HeapTypeDecoder(
         HEAP_TYPE_NO_EXTERN -> AbstractHeapType.NoExtern
         HEAP_TYPE_EXCEPTION -> AbstractHeapType.Exception
         HEAP_TYPE_NO_EXCEPTION -> AbstractHeapType.NoException
+        HEAP_TYPE_CONT -> AbstractHeapType.Cont
+        HEAP_TYPE_NO_CONT -> AbstractHeapType.NoCont
         HEAP_TYPE_ANY -> AbstractHeapType.Any
         HEAP_TYPE_EQ -> AbstractHeapType.Eq
         HEAP_TYPE_STRUCT -> AbstractHeapType.Struct
@@ -70,3 +74,5 @@ const val HEAP_TYPE_I31 = 11
 const val HEAP_TYPE_NONE = 12
 const val HEAP_TYPE_BOTTOM = 13
 const val HEAP_TYPE_HEAP_TYPE_INDEX = 14
+const val HEAP_TYPE_CONT = 15
+const val HEAP_TYPE_NO_CONT = 16
