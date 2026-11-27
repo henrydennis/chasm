@@ -10,9 +10,15 @@ public final class io/github/charlietap/chasm/embedding/InvocationKt {
 	public static final fun invoke (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
 	public static synthetic fun invoke$default (Lio/github/charlietap/chasm/embedding/shapes/Instance;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
 	public static synthetic fun invoke$default (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;ILjava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
+	public static final fun invokeSuspending (Lio/github/charlietap/chasm/embedding/shapes/Instance;Ljava/lang/String;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun invokeSuspending (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invokeSuspending$default (Lio/github/charlietap/chasm/embedding/shapes/Instance;Ljava/lang/String;Ljava/util/List;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invokeSuspending$default (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public static final fun invokeUnboxed (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
+	public static final fun invokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun prepareFunction (Lio/github/charlietap/chasm/embedding/shapes/Instance;Ljava/lang/String;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
 	public static final fun unsafeInvokeUnboxed (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
+	public static final fun unsafeInvokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/charlietap/chasm/embedding/ModuleInfoKt {
@@ -33,6 +39,7 @@ public final class io/github/charlietap/chasm/embedding/StoreControlKt {
 	public static final fun memory (Lio/github/charlietap/chasm/embedding/shapes/Store;Lio/github/charlietap/chasm/type/MemoryType;)Lio/github/charlietap/chasm/embedding/shapes/Memory;
 	public static final fun remainingFuel (Lio/github/charlietap/chasm/embedding/shapes/Store;)J
 	public static final fun resetFuel (Lio/github/charlietap/chasm/embedding/shapes/Store;)V
+	public static final fun suspendFunction (Lio/github/charlietap/chasm/embedding/shapes/Store;Lio/github/charlietap/chasm/type/FunctionType;Lio/github/charlietap/chasm/host/SuspendHostFunction;)Lio/github/charlietap/chasm/embedding/shapes/Function;
 	public static final fun table (Lio/github/charlietap/chasm/embedding/shapes/Store;Lio/github/charlietap/chasm/type/TableType;Ljava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/Table;
 	public static final fun tag (Lio/github/charlietap/chasm/embedding/shapes/Store;Lio/github/charlietap/chasm/type/TagType;)Lio/github/charlietap/chasm/embedding/shapes/Tag;
 }
@@ -292,7 +299,9 @@ public abstract interface class io/github/charlietap/chasm/embedding/engine/Engi
 	public abstract fun instance (Lio/github/charlietap/chasm/embedding/shapes/Module;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun interrupt ()Z
 	public abstract fun invoke (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
+	public fun invokeSuspending (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun invokeUnboxed (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
+	public fun invokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun isSubtype-hm7B2HE (II)Z
 	public abstract fun memory (Lio/github/charlietap/chasm/type/MemoryType;)Lio/github/charlietap/chasm/embedding/shapes/Memory;
 	public abstract fun memoryByteSize (Lio/github/charlietap/chasm/embedding/shapes/Memory;)I
@@ -329,12 +338,14 @@ public abstract interface class io/github/charlietap/chasm/embedding/engine/Engi
 	public abstract fun structFieldCount-wsPCB8A (I)I
 	public abstract fun structFieldInfo-JSNsNYI (II)I
 	public abstract fun structType-QF3mtew (Lio/github/charlietap/chasm/reference/StructReference;)I
+	public fun suspendFunction (Lio/github/charlietap/chasm/type/FunctionType;Lio/github/charlietap/chasm/host/SuspendHostFunction;)Lio/github/charlietap/chasm/embedding/shapes/Function;
 	public abstract fun table (Lio/github/charlietap/chasm/type/TableType;Ljava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/Table;
 	public abstract fun tag (Lio/github/charlietap/chasm/type/TagType;)Lio/github/charlietap/chasm/embedding/shapes/Tag;
 	public abstract fun takePending ()Lio/github/charlietap/chasm/reference/ExceptionReference;
 	public abstract fun unsafeAllocateStruct-BrHTgrk (I[J[Ljava/lang/Object;)Lio/github/charlietap/chasm/reference/StructReference;
 	public abstract fun unsafeBorrowMemory (Lio/github/charlietap/chasm/embedding/shapes/Memory;)Ljava/lang/Object;
 	public abstract fun unsafeInvokeUnboxed (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;)Lio/github/charlietap/chasm/embedding/shapes/ChasmResult;
+	public fun unsafeInvokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun unsafeWriteArrayReference (Lio/github/charlietap/chasm/reference/ArrayReference;ILjava/lang/Object;)V
 	public abstract fun unsafeWriteGlobalReference (Lio/github/charlietap/chasm/embedding/shapes/Global;Ljava/lang/Object;)V
 	public abstract fun unsafeWriteStructReference (Lio/github/charlietap/chasm/reference/StructReference;ILjava/lang/Object;)V
@@ -356,6 +367,13 @@ public abstract interface class io/github/charlietap/chasm/embedding/engine/Engi
 	public abstract fun writeTable (Lio/github/charlietap/chasm/embedding/shapes/Table;ILjava/lang/Object;)V
 	public abstract fun writeTableElements (Lio/github/charlietap/chasm/embedding/shapes/Table;I[Ljava/lang/Object;II)V
 	public abstract fun writeUtf8String (Lio/github/charlietap/chasm/embedding/shapes/Memory;ILjava/lang/String;)V
+}
+
+public final class io/github/charlietap/chasm/embedding/engine/Engine$DefaultImpls {
+	public static fun invokeSuspending (Lio/github/charlietap/chasm/embedding/engine/Engine;Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun invokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/engine/Engine;Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun suspendFunction (Lio/github/charlietap/chasm/embedding/engine/Engine;Lio/github/charlietap/chasm/type/FunctionType;Lio/github/charlietap/chasm/host/SuspendHostFunction;)Lio/github/charlietap/chasm/embedding/shapes/Function;
+	public static fun unsafeInvokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/engine/Engine;Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class io/github/charlietap/chasm/embedding/error/ExecutionError {
@@ -1321,6 +1339,10 @@ public final class io/github/charlietap/chasm/host/ModuleIndex$TagIndex : io/git
 	public fun toString ()Ljava/lang/String;
 	public static fun toString-impl (I)Ljava/lang/String;
 	public final synthetic fun unbox-impl ()I
+}
+
+public abstract interface class io/github/charlietap/chasm/host/SuspendHostFunction {
+	public abstract fun invoke ([J[Ljava/lang/Object;Lio/github/charlietap/chasm/host/HostModuleInstance;Lio/github/charlietap/chasm/host/HostResources;IILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface annotation class io/github/charlietap/chasm/host/UnsafeHostApi : java/lang/annotation/Annotation {
