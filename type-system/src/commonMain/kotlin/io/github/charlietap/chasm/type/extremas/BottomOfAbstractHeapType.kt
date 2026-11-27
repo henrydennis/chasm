@@ -25,5 +25,8 @@ internal fun BottomOfAbstractHeapType(
     is AbstractHeapType.Extern,
     is AbstractHeapType.NoExtern,
     -> AbstractHeapType.NoExtern
+    is AbstractHeapType.Cont,
+    is AbstractHeapType.NoCont,
+    -> AbstractHeapType.NoCont
     is AbstractHeapType.Bottom -> null
 }

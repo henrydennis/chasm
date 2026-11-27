@@ -33,5 +33,10 @@ internal fun CompositeTypeMatcher(
         context,
     )
     type1 is CompositeType.Struct && type2 is CompositeType.Struct -> structTypeMatcher(type1.structType, type2.structType, context)
+    type1 is CompositeType.Cont && type2 is CompositeType.Cont -> HeapTypeMatcher(
+        type1.functionType,
+        type2.functionType,
+        context,
+    )
     else -> false
 }

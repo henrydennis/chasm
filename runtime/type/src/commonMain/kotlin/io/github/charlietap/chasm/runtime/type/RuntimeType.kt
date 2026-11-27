@@ -50,6 +50,8 @@ value class ReferenceTypeTest private constructor(
                 AbstractHeapType.NoExtern -> NO_TAGS
                 AbstractHeapType.Exception -> EXCEPTION_TAG
                 AbstractHeapType.NoException -> NO_TAGS
+                AbstractHeapType.Cont -> CONTINUATION_TAG
+                AbstractHeapType.NoCont -> NO_TAGS
                 AbstractHeapType.Any -> I31_TAG or STRUCT_TAG or ARRAY_TAG or HOST_TAG
                 AbstractHeapType.Eq -> I31_TAG or STRUCT_TAG or ARRAY_TAG
                 AbstractHeapType.Struct -> STRUCT_TAG
@@ -77,6 +79,7 @@ value class ReferenceTypeTest private constructor(
         private const val HOST_TAG = 1 shl 6
         private const val EXCEPTION_TAG = 1 shl 7
         private const val EXTERN_TAG = 1 shl 8
+        private const val CONTINUATION_TAG = 1 shl 9
     }
 }
 
@@ -313,7 +316,13 @@ private class RecGroupKeyEncoder(
             is CompositeType.Function -> functionType(type.functionType)
             is CompositeType.Struct -> structType(type.structType)
             is CompositeType.Array -> arrayType(type.arrayType)
+            is CompositeType.Cont -> contType(type.functionType)
         }
+    }
+
+    private fun contType(type: ConcreteHeapType) {
+        add(Tag.CONT)
+        heapType(type)
     }
 
     private fun functionType(type: FunctionType) {
@@ -386,6 +395,8 @@ private class RecGroupKeyEncoder(
             AbstractHeapType.NoExtern -> add(Tag.NO_EXTERN)
             AbstractHeapType.Exception -> add(Tag.EXCEPTION)
             AbstractHeapType.NoException -> add(Tag.NO_EXCEPTION)
+            AbstractHeapType.Cont -> add(Tag.CONT_HEAP)
+            AbstractHeapType.NoCont -> add(Tag.NO_CONT)
             AbstractHeapType.Any -> add(Tag.ANY)
             AbstractHeapType.Eq -> add(Tag.EQ)
             AbstractHeapType.Struct -> add(Tag.STRUCT_HEAP)
@@ -495,4 +506,7 @@ private object Tag {
     const val BOTTOM = 30
     const val INTERNAL = 31
     const val EXTERNAL = 32
+    const val CONT = 33
+    const val CONT_HEAP = 34
+    const val NO_CONT = 35
 }

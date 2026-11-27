@@ -820,6 +820,7 @@ public final class io/github/charlietap/chasm/declarations/construction/Declarat
 	public final fun arrayNewFixed (II)V
 	public final fun build (Lio/github/charlietap/chasm/declarations/DataSource;)Lio/github/charlietap/chasm/declarations/ModuleDeclarations;
 	public final fun constantExpression (I)V
+	public final fun contComposite ()V
 	public final fun dataSegment (ZIJI)V
 	public final fun definedHeapType (I)V
 	public final fun elementSegment (III)V
@@ -899,6 +900,7 @@ public final class io/github/charlietap/chasm/declarations/construction/ExportKi
 public final class io/github/charlietap/chasm/declarations/construction/HeapTypes {
 	public static final field ANY I
 	public static final field ARRAY I
+	public static final field CONT I
 	public static final field EQ I
 	public static final field EXCEPTION I
 	public static final field EXTERN I
@@ -906,6 +908,7 @@ public final class io/github/charlietap/chasm/declarations/construction/HeapType
 	public static final field I31 I
 	public static final field INSTANCE Lio/github/charlietap/chasm/declarations/construction/HeapTypes;
 	public static final field NONE I
+	public static final field NO_CONT I
 	public static final field NO_EXCEPTION I
 	public static final field NO_EXTERN I
 	public static final field NO_FUNC I

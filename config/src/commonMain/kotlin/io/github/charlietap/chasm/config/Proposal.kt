@@ -8,4 +8,5 @@ enum class Proposal {
     MultipleMemories,
     ExceptionHandling,
     Threads,
+    StackSwitching,
 }

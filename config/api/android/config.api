@@ -168,6 +168,7 @@ public final class io/github/charlietap/chasm/config/Proposal : java/lang/Enum {
 	public static final field ExceptionHandling Lio/github/charlietap/chasm/config/Proposal;
 	public static final field ExtendedConstExpression Lio/github/charlietap/chasm/config/Proposal;
 	public static final field MultipleMemories Lio/github/charlietap/chasm/config/Proposal;
+	public static final field StackSwitching Lio/github/charlietap/chasm/config/Proposal;
 	public static final field TailCall Lio/github/charlietap/chasm/config/Proposal;
 	public static final field Threads Lio/github/charlietap/chasm/config/Proposal;
 	public static final field TypedFunctionReferences Lio/github/charlietap/chasm/config/Proposal;

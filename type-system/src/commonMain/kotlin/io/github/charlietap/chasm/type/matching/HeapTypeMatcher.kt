@@ -33,6 +33,7 @@ internal fun HeapTypeMatcher(
     type1 is AbstractHeapType.NoFunc -> HeapTypeMatcher(type2, AbstractHeapType.Func, context)
     type1 is AbstractHeapType.NoException -> HeapTypeMatcher(type2, AbstractHeapType.Exception, context)
     type1 is AbstractHeapType.NoExtern -> HeapTypeMatcher(type2, AbstractHeapType.Extern, context)
+    type1 is AbstractHeapType.NoCont -> HeapTypeMatcher(type2, AbstractHeapType.Cont, context)
     type1 is AbstractHeapType.Bottom -> true
     type1 is AbstractHeapType && type2 is AbstractHeapType -> abstractHeapTypeMatcher(type1, type2, context)
     type1 is ConcreteHeapType.TypeIndex -> {
@@ -86,4 +87,5 @@ private fun CompositeTypeHeapTypeMatcher(
         }
     }
     is CompositeType.Function -> heapType == AbstractHeapType.Func
+    is CompositeType.Cont -> heapType == AbstractHeapType.Cont
 }

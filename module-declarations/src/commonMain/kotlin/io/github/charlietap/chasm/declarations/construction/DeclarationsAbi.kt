@@ -20,6 +20,8 @@ object HeapTypes {
     const val ARRAY = 9
     const val I31 = 10
     const val NONE = 11
+    const val CONT = 12
+    const val NO_CONT = 13
 
     fun abstract(
         tag: Int,
@@ -30,6 +32,8 @@ object HeapTypes {
         NO_EXTERN -> AbstractHeapType.NoExtern
         EXCEPTION -> AbstractHeapType.Exception
         NO_EXCEPTION -> AbstractHeapType.NoException
+        CONT -> AbstractHeapType.Cont
+        NO_CONT -> AbstractHeapType.NoCont
         ANY -> AbstractHeapType.Any
         EQ -> AbstractHeapType.Eq
         STRUCT -> AbstractHeapType.Struct
@@ -48,6 +52,8 @@ object HeapTypes {
         AbstractHeapType.NoExtern -> NO_EXTERN
         AbstractHeapType.Exception -> EXCEPTION
         AbstractHeapType.NoException -> NO_EXCEPTION
+        AbstractHeapType.Cont -> CONT
+        AbstractHeapType.NoCont -> NO_CONT
         AbstractHeapType.Any -> ANY
         AbstractHeapType.Eq -> EQ
         AbstractHeapType.Struct -> STRUCT

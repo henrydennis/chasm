@@ -171,6 +171,12 @@ sealed interface io.github.charlietap.chasm.vm/AbstractHeapType : io.github.char
         final fun toString(): kotlin/String // io.github.charlietap.chasm.vm/AbstractHeapType.Bottom.toString|toString(){}[0]
     }
 
+    final object Cont : io.github.charlietap.chasm.vm/AbstractHeapType { // io.github.charlietap.chasm.vm/AbstractHeapType.Cont|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.vm/AbstractHeapType.Cont.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.vm/AbstractHeapType.Cont.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.vm/AbstractHeapType.Cont.toString|toString(){}[0]
+    }
+
     final object Eq : io.github.charlietap.chasm.vm/AbstractHeapType { // io.github.charlietap.chasm.vm/AbstractHeapType.Eq|null[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.vm/AbstractHeapType.Eq.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.vm/AbstractHeapType.Eq.hashCode|hashCode(){}[0]
@@ -199,6 +205,12 @@ sealed interface io.github.charlietap.chasm.vm/AbstractHeapType : io.github.char
         final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.vm/AbstractHeapType.I31.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.vm/AbstractHeapType.I31.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // io.github.charlietap.chasm.vm/AbstractHeapType.I31.toString|toString(){}[0]
+    }
+
+    final object NoCont : io.github.charlietap.chasm.vm/AbstractHeapType { // io.github.charlietap.chasm.vm/AbstractHeapType.NoCont|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.vm/AbstractHeapType.NoCont.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.vm/AbstractHeapType.NoCont.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.vm/AbstractHeapType.NoCont.toString|toString(){}[0]
     }
 
     final object NoException : io.github.charlietap.chasm.vm/AbstractHeapType { // io.github.charlietap.chasm.vm/AbstractHeapType.NoException|null[0]

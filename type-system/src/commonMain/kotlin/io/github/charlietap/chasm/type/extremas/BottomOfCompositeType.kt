@@ -23,6 +23,7 @@ internal fun BottomOfCompositeType(
     is CompositeType.Array,
     -> AbstractHeapType.Struct
     is CompositeType.Function -> AbstractHeapType.Func
+    is CompositeType.Cont -> AbstractHeapType.Cont
 }.let { abstractHeapType ->
     bottomOfAbstractHeapType(abstractHeapType, types)
 }

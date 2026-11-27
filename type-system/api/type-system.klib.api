@@ -685,6 +685,12 @@ sealed interface io.github.charlietap.chasm.type/AbstractHeapType : io.github.ch
         final fun toString(): kotlin/String // io.github.charlietap.chasm.type/AbstractHeapType.Array.toString|toString(){}[0]
     }
 
+    final object Cont : io.github.charlietap.chasm.type/AbstractHeapType { // io.github.charlietap.chasm.type/AbstractHeapType.Cont|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.type/AbstractHeapType.Cont.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.type/AbstractHeapType.Cont.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.type/AbstractHeapType.Cont.toString|toString(){}[0]
+    }
+
     final object Eq : io.github.charlietap.chasm.type/AbstractHeapType { // io.github.charlietap.chasm.type/AbstractHeapType.Eq|null[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.type/AbstractHeapType.Eq.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.type/AbstractHeapType.Eq.hashCode|hashCode(){}[0]
@@ -713,6 +719,12 @@ sealed interface io.github.charlietap.chasm.type/AbstractHeapType : io.github.ch
         final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.type/AbstractHeapType.I31.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.type/AbstractHeapType.I31.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // io.github.charlietap.chasm.type/AbstractHeapType.I31.toString|toString(){}[0]
+    }
+
+    final object NoCont : io.github.charlietap.chasm.type/AbstractHeapType { // io.github.charlietap.chasm.type/AbstractHeapType.NoCont|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.type/AbstractHeapType.NoCont.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.type/AbstractHeapType.NoCont.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.type/AbstractHeapType.NoCont.toString|toString(){}[0]
     }
 
     final object NoException : io.github.charlietap.chasm.type/AbstractHeapType { // io.github.charlietap.chasm.type/AbstractHeapType.NoException|null[0]
@@ -800,6 +812,17 @@ sealed interface io.github.charlietap.chasm.type/CompositeType : io.github.charl
         final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.type/CompositeType.Array.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.type/CompositeType.Array.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // io.github.charlietap.chasm.type/CompositeType.Array.toString|toString(){}[0]
+    }
+
+    final value class Cont : io.github.charlietap.chasm.type/CompositeType { // io.github.charlietap.chasm.type/CompositeType.Cont|null[0]
+        constructor <init>(io.github.charlietap.chasm.type/ConcreteHeapType) // io.github.charlietap.chasm.type/CompositeType.Cont.<init>|<init>(io.github.charlietap.chasm.type.ConcreteHeapType){}[0]
+
+        final val functionType // io.github.charlietap.chasm.type/CompositeType.Cont.functionType|{}functionType[0]
+            final fun <get-functionType>(): io.github.charlietap.chasm.type/ConcreteHeapType // io.github.charlietap.chasm.type/CompositeType.Cont.functionType.<get-functionType>|<get-functionType>(){}[0]
+
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.type/CompositeType.Cont.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.type/CompositeType.Cont.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.type/CompositeType.Cont.toString|toString(){}[0]
     }
 
     final value class Function : io.github.charlietap.chasm.type/CompositeType { // io.github.charlietap.chasm.type/CompositeType.Function|null[0]
@@ -1679,8 +1702,10 @@ final fun io.github.charlietap.chasm.type.rolling/DefinedTypeUnroller(io.github.
 final fun io.github.charlietap.chasm.type.rolling/RecursiveTypeUnroller(io.github.charlietap.chasm.type/RecursiveType): io.github.charlietap.chasm.type/RecursiveType // io.github.charlietap.chasm.type.rolling/RecursiveTypeUnroller|RecursiveTypeUnroller(io.github.charlietap.chasm.type.RecursiveType){}[0]
 final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/arrayType(): io.github.charlietap.chasm.type/ArrayType? // io.github.charlietap.chasm.type.ext/arrayType|arrayType@io.github.charlietap.chasm.type.CompositeType(){}[0]
 final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/asArrayType(): io.github.charlietap.chasm.type/ArrayType // io.github.charlietap.chasm.type.ext/asArrayType|asArrayType@io.github.charlietap.chasm.type.CompositeType(){}[0]
+final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/asContType(): io.github.charlietap.chasm.type/ConcreteHeapType // io.github.charlietap.chasm.type.ext/asContType|asContType@io.github.charlietap.chasm.type.CompositeType(){}[0]
 final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/asFunctionType(): io.github.charlietap.chasm.type/FunctionType // io.github.charlietap.chasm.type.ext/asFunctionType|asFunctionType@io.github.charlietap.chasm.type.CompositeType(){}[0]
 final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/asStructType(): io.github.charlietap.chasm.type/StructType // io.github.charlietap.chasm.type.ext/asStructType|asStructType@io.github.charlietap.chasm.type.CompositeType(){}[0]
+final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/contType(): io.github.charlietap.chasm.type/ConcreteHeapType? // io.github.charlietap.chasm.type.ext/contType|contType@io.github.charlietap.chasm.type.CompositeType(){}[0]
 final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/functionType(): io.github.charlietap.chasm.type/FunctionType? // io.github.charlietap.chasm.type.ext/functionType|functionType@io.github.charlietap.chasm.type.CompositeType(){}[0]
 final inline fun (io.github.charlietap.chasm.type/CompositeType).io.github.charlietap.chasm.type.ext/structType(): io.github.charlietap.chasm.type/StructType? // io.github.charlietap.chasm.type.ext/structType|structType@io.github.charlietap.chasm.type.CompositeType(){}[0]
 final inline fun (io.github.charlietap.chasm.type/DefinedType).io.github.charlietap.chasm.type.ext/arrayType(kotlin/Function1<io.github.charlietap.chasm.type/DefinedType, io.github.charlietap.chasm.type/CompositeType> = ...): io.github.charlietap.chasm.type/ArrayType? // io.github.charlietap.chasm.type.ext/arrayType|arrayType@io.github.charlietap.chasm.type.DefinedType(kotlin.Function1<io.github.charlietap.chasm.type.DefinedType,io.github.charlietap.chasm.type.CompositeType>){}[0]

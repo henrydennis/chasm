@@ -30,4 +30,5 @@ inline fun CompositeTypeDeepCopier(
     is CompositeType.Struct -> CompositeType.Struct(
         structTypeCopier(input.structType),
     )
+    is CompositeType.Cont -> CompositeType.Cont(input.functionType)
 }

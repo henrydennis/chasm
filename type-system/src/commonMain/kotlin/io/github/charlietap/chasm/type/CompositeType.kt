@@ -12,4 +12,7 @@ sealed interface CompositeType : Type {
 
     @JvmInline
     value class Array(val arrayType: ArrayType) : CompositeType
+
+    @JvmInline
+    value class Cont(val functionType: ConcreteHeapType) : CompositeType
 }

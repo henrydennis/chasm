@@ -18,6 +18,10 @@ sealed interface AbstractHeapType : HeapType {
 
     data object NoException : AbstractHeapType
 
+    data object Cont : AbstractHeapType
+
+    data object NoCont : AbstractHeapType
+
     data object Any : AbstractHeapType
 
     data object Eq : AbstractHeapType

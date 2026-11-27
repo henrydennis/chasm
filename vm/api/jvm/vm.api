@@ -22,6 +22,13 @@ public final class io/github/charlietap/chasm/vm/AbstractHeapType$Bottom : io/gi
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/charlietap/chasm/vm/AbstractHeapType$Cont : io/github/charlietap/chasm/vm/AbstractHeapType {
+	public static final field INSTANCE Lio/github/charlietap/chasm/vm/AbstractHeapType$Cont;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/charlietap/chasm/vm/AbstractHeapType$Eq : io/github/charlietap/chasm/vm/AbstractHeapType {
 	public static final field INSTANCE Lio/github/charlietap/chasm/vm/AbstractHeapType$Eq;
 	public fun equals (Ljava/lang/Object;)Z
@@ -52,6 +59,13 @@ public final class io/github/charlietap/chasm/vm/AbstractHeapType$Func : io/gith
 
 public final class io/github/charlietap/chasm/vm/AbstractHeapType$I31 : io/github/charlietap/chasm/vm/AbstractHeapType {
 	public static final field INSTANCE Lio/github/charlietap/chasm/vm/AbstractHeapType$I31;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/charlietap/chasm/vm/AbstractHeapType$NoCont : io/github/charlietap/chasm/vm/AbstractHeapType {
+	public static final field INSTANCE Lio/github/charlietap/chasm/vm/AbstractHeapType$NoCont;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

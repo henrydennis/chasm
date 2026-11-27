@@ -59,6 +59,8 @@ internal object ReferenceTypeMapper {
         AbstractHeapType.Array -> ChasmAbstractHeapType.Array
         AbstractHeapType.I31 -> ChasmAbstractHeapType.I31
         AbstractHeapType.None -> ChasmAbstractHeapType.None
+        AbstractHeapType.Cont -> ChasmAbstractHeapType.Cont
+        AbstractHeapType.NoCont -> ChasmAbstractHeapType.NoCont
         AbstractHeapType.Bottom -> ChasmAbstractHeapType.Bottom(ChasmBottomType)
     }
 
@@ -75,6 +77,8 @@ internal object ReferenceTypeMapper {
         ChasmAbstractHeapType.Array -> AbstractHeapType.Array
         ChasmAbstractHeapType.I31 -> AbstractHeapType.I31
         ChasmAbstractHeapType.None -> AbstractHeapType.None
+        ChasmAbstractHeapType.Cont -> AbstractHeapType.Cont
+        ChasmAbstractHeapType.NoCont -> AbstractHeapType.NoCont
         is ChasmAbstractHeapType.Bottom -> AbstractHeapType.Bottom
     }
 }

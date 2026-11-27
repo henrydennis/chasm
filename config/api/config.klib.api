@@ -48,6 +48,7 @@ final enum class io.github.charlietap.chasm.config/Proposal : kotlin/Enum<io.git
     enum entry ExceptionHandling // io.github.charlietap.chasm.config/Proposal.ExceptionHandling|null[0]
     enum entry ExtendedConstExpression // io.github.charlietap.chasm.config/Proposal.ExtendedConstExpression|null[0]
     enum entry MultipleMemories // io.github.charlietap.chasm.config/Proposal.MultipleMemories|null[0]
+    enum entry StackSwitching // io.github.charlietap.chasm.config/Proposal.StackSwitching|null[0]
     enum entry TailCall // io.github.charlietap.chasm.config/Proposal.TailCall|null[0]
     enum entry Threads // io.github.charlietap.chasm.config/Proposal.Threads|null[0]
     enum entry TypedFunctionReferences // io.github.charlietap.chasm.config/Proposal.TypedFunctionReferences|null[0]

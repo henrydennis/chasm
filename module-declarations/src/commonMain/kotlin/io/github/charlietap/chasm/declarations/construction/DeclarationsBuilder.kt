@@ -207,6 +207,10 @@ class DeclarationsBuilder {
         stack += CompositeType.Array(ArrayType(pop()))
     }
 
+    fun contComposite() {
+        stack += CompositeType.Cont(pop<ConcreteHeapType>())
+    }
+
     fun subType(
         final: Boolean,
         supertypes: Int,

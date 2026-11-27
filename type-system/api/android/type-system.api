@@ -29,6 +29,13 @@ public final class io/github/charlietap/chasm/type/AbstractHeapType$Bottom : io/
 	public final synthetic fun unbox-impl ()Lio/github/charlietap/chasm/type/BottomType;
 }
 
+public final class io/github/charlietap/chasm/type/AbstractHeapType$Cont : io/github/charlietap/chasm/type/AbstractHeapType {
+	public static final field INSTANCE Lio/github/charlietap/chasm/type/AbstractHeapType$Cont;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/charlietap/chasm/type/AbstractHeapType$Eq : io/github/charlietap/chasm/type/AbstractHeapType {
 	public static final field INSTANCE Lio/github/charlietap/chasm/type/AbstractHeapType$Eq;
 	public fun equals (Ljava/lang/Object;)Z
@@ -59,6 +66,13 @@ public final class io/github/charlietap/chasm/type/AbstractHeapType$Func : io/gi
 
 public final class io/github/charlietap/chasm/type/AbstractHeapType$I31 : io/github/charlietap/chasm/type/AbstractHeapType {
 	public static final field INSTANCE Lio/github/charlietap/chasm/type/AbstractHeapType$I31;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/charlietap/chasm/type/AbstractHeapType$NoCont : io/github/charlietap/chasm/type/AbstractHeapType {
+	public static final field INSTANCE Lio/github/charlietap/chasm/type/AbstractHeapType$NoCont;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -190,6 +204,20 @@ public final class io/github/charlietap/chasm/type/CompositeType$Array : io/gith
 	public fun toString ()Ljava/lang/String;
 	public static fun toString-impl (Lio/github/charlietap/chasm/type/FieldType;)Ljava/lang/String;
 	public final synthetic fun unbox-impl ()Lio/github/charlietap/chasm/type/FieldType;
+}
+
+public final class io/github/charlietap/chasm/type/CompositeType$Cont : io/github/charlietap/chasm/type/CompositeType {
+	public static final synthetic fun box-impl (Lio/github/charlietap/chasm/type/ConcreteHeapType;)Lio/github/charlietap/chasm/type/CompositeType$Cont;
+	public static fun constructor-impl (Lio/github/charlietap/chasm/type/ConcreteHeapType;)Lio/github/charlietap/chasm/type/ConcreteHeapType;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Lio/github/charlietap/chasm/type/ConcreteHeapType;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Lio/github/charlietap/chasm/type/ConcreteHeapType;Lio/github/charlietap/chasm/type/ConcreteHeapType;)Z
+	public final fun getFunctionType ()Lio/github/charlietap/chasm/type/ConcreteHeapType;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Lio/github/charlietap/chasm/type/ConcreteHeapType;)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Lio/github/charlietap/chasm/type/ConcreteHeapType;)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Lio/github/charlietap/chasm/type/ConcreteHeapType;
 }
 
 public final class io/github/charlietap/chasm/type/CompositeType$Function : io/github/charlietap/chasm/type/CompositeType {
@@ -1559,8 +1587,10 @@ public final class io/github/charlietap/chasm/type/expansion/DefinedTypeExpander
 public final class io/github/charlietap/chasm/type/ext/CompositeTypeExtKt {
 	public static final fun arrayType (Lio/github/charlietap/chasm/type/CompositeType;)Lio/github/charlietap/chasm/type/FieldType;
 	public static final fun asArrayType (Lio/github/charlietap/chasm/type/CompositeType;)Lio/github/charlietap/chasm/type/FieldType;
+	public static final fun asContType (Lio/github/charlietap/chasm/type/CompositeType;)Lio/github/charlietap/chasm/type/ConcreteHeapType;
 	public static final fun asFunctionType (Lio/github/charlietap/chasm/type/CompositeType;)Lio/github/charlietap/chasm/type/FunctionType;
 	public static final fun asStructType (Lio/github/charlietap/chasm/type/CompositeType;)Ljava/util/List;
+	public static final fun contType (Lio/github/charlietap/chasm/type/CompositeType;)Lio/github/charlietap/chasm/type/ConcreteHeapType;
 	public static final fun functionType (Lio/github/charlietap/chasm/type/CompositeType;)Lio/github/charlietap/chasm/type/FunctionType;
 	public static final fun structType (Lio/github/charlietap/chasm/type/CompositeType;)Ljava/util/List;
 }

@@ -33,4 +33,7 @@ internal fun CompositeTypeSubstitutor(
     is CompositeType.Function -> CompositeType.Function(
         functionTypeSubstitutor(compositeType.functionType, substitution),
     )
+    is CompositeType.Cont -> CompositeType.Cont(
+        substitution.concreteHeapTypeSubstitutor(compositeType.functionType),
+    )
 }

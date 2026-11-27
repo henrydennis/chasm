@@ -52,6 +52,10 @@ sealed interface AbstractHeapType : HeapType {
 
     data object None : AbstractHeapType
 
+    data object Cont : AbstractHeapType
+
+    data object NoCont : AbstractHeapType
+
     data object Bottom : AbstractHeapType
 }
 
