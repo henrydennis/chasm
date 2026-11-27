@@ -1,5 +1,6 @@
 package io.github.charlietap.chasm.embedding
 
+import io.github.charlietap.chasm.ExperimentalChasmApi
 import io.github.charlietap.chasm.embedding.error.InstantiationError
 import io.github.charlietap.chasm.embedding.shapes.ChasmResult
 import io.github.charlietap.chasm.embedding.shapes.Function
@@ -13,6 +14,7 @@ import io.github.charlietap.chasm.embedding.shapes.Table
 import io.github.charlietap.chasm.embedding.shapes.Tag
 import io.github.charlietap.chasm.embedding.value.ExecutionValue
 import io.github.charlietap.chasm.host.HostFunction
+import io.github.charlietap.chasm.host.SuspendHostFunction
 import io.github.charlietap.chasm.reference.FunctionReference
 import io.github.charlietap.chasm.type.FunctionType
 import io.github.charlietap.chasm.type.GlobalType
@@ -65,6 +67,15 @@ fun function(
     function: HostFunction,
 ): Function {
     return store.engine.function(type, function)
+}
+
+@ExperimentalChasmApi
+fun suspendFunction(
+    store: Store,
+    type: FunctionType,
+    function: SuspendHostFunction,
+): Function {
+    return store.engine.suspendFunction(type, function)
 }
 
 fun memory(

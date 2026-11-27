@@ -63,6 +63,36 @@ data class ExecutionContext(
     var compiledUnwinding: Boolean = false
 
     @JvmField
+    var allowSuspend: Boolean = false
+
+    @JvmField
+    var compiledSuspending: Boolean = false
+
+    @JvmField
+    var compiledResuming: Boolean = false
+
+    @JvmField
+    var pendingSuspension: PendingSuspension? = null
+
+    @JvmField
+    var suspensionFrames: ArrayList<SuspendedFrame>? = null
+
+    @JvmField
+    var resumeHostWords: LongArray? = null
+
+    @JvmField
+    var resumeHostReferences: Array<Any?>? = null
+
+    @JvmField
+    var interpreterResumeIp: Int = -1
+
+    @JvmField
+    var interpreterReturnResultCount: Int = 0
+
+    @JvmField
+    var interpreterReturnActivationHeaderSlot: Int = -1
+
+    @JvmField
     var nestedInterpreter: NestedInterpreter? = null
 
     val promptStack: ArrayList<PromptRecord> = ArrayList()

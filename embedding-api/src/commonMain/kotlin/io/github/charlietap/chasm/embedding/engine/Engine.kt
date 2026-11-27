@@ -1,5 +1,6 @@
 package io.github.charlietap.chasm.embedding.engine
 
+import io.github.charlietap.chasm.ExperimentalChasmApi
 import io.github.charlietap.chasm.InternalChasmApi
 import io.github.charlietap.chasm.embedding.error.ExecutionError
 import io.github.charlietap.chasm.embedding.error.InstantiationError
@@ -19,6 +20,7 @@ import io.github.charlietap.chasm.embedding.value.ExecutionValue
 import io.github.charlietap.chasm.host.HostFunction
 import io.github.charlietap.chasm.host.HostGcFieldInfo
 import io.github.charlietap.chasm.host.HostGcType
+import io.github.charlietap.chasm.host.SuspendHostFunction
 import io.github.charlietap.chasm.reference.ArrayReference
 import io.github.charlietap.chasm.reference.ExceptionReference
 import io.github.charlietap.chasm.reference.FunctionReference
@@ -50,6 +52,14 @@ interface Engine {
         type: FunctionType,
         function: HostFunction,
     ): Function
+
+    @OptIn(ExperimentalChasmApi::class)
+    fun suspendFunction(
+        type: FunctionType,
+        function: SuspendHostFunction,
+    ): Function {
+        throw UnsupportedOperationException("suspending host functions are not supported by this engine")
+    }
 
     fun memory(type: MemoryType): Memory
 
@@ -95,6 +105,29 @@ interface Engine {
         words: LongArray,
         references: Array<Any?>,
     ): ChasmResult<Unit, InvocationError>
+
+    suspend fun invokeSuspending(
+        function: PreparedFunction,
+        args: List<ExecutionValue>,
+    ): ChasmResult<List<ExecutionValue>, InvocationError> {
+        return invoke(function, args)
+    }
+
+    suspend fun invokeUnboxedSuspending(
+        function: PreparedFunction,
+        words: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+        return invokeUnboxed(function, words, references)
+    }
+
+    suspend fun unsafeInvokeUnboxedSuspending(
+        function: PreparedFunction,
+        words: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+        return unsafeInvokeUnboxed(function, words, references)
+    }
 
     fun sizeMemory(memory: Memory): Int
 

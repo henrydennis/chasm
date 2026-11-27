@@ -162,7 +162,7 @@ final class io.github.charlietap.chasm.config/ModuleConfig { // io.github.charli
 }
 
 final class io.github.charlietap.chasm.config/RuntimeConfig { // io.github.charlietap.chasm.config/RuntimeConfig|null[0]
-    constructor <init>(kotlin/Boolean = ..., kotlin/Boolean = ..., io.github.charlietap.chasm.config/Limits = ...) // io.github.charlietap.chasm.config/RuntimeConfig.<init>|<init>(kotlin.Boolean;kotlin.Boolean;io.github.charlietap.chasm.config.Limits){}[0]
+    constructor <init>(kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., io.github.charlietap.chasm.config/Limits = ...) // io.github.charlietap.chasm.config/RuntimeConfig.<init>|<init>(kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;io.github.charlietap.chasm.config.Limits){}[0]
 
     final val interrupts // io.github.charlietap.chasm.config/RuntimeConfig.interrupts|{}interrupts[0]
         final fun <get-interrupts>(): kotlin/Boolean // io.github.charlietap.chasm.config/RuntimeConfig.interrupts.<get-interrupts>|<get-interrupts>(){}[0]
@@ -170,11 +170,14 @@ final class io.github.charlietap.chasm.config/RuntimeConfig { // io.github.charl
         final fun <get-limits>(): io.github.charlietap.chasm.config/Limits // io.github.charlietap.chasm.config/RuntimeConfig.limits.<get-limits>|<get-limits>(){}[0]
     final val stacktraces // io.github.charlietap.chasm.config/RuntimeConfig.stacktraces|{}stacktraces[0]
         final fun <get-stacktraces>(): kotlin/Boolean // io.github.charlietap.chasm.config/RuntimeConfig.stacktraces.<get-stacktraces>|<get-stacktraces>(){}[0]
+    final val suspendable // io.github.charlietap.chasm.config/RuntimeConfig.suspendable|{}suspendable[0]
+        final fun <get-suspendable>(): kotlin/Boolean // io.github.charlietap.chasm.config/RuntimeConfig.suspendable.<get-suspendable>|<get-suspendable>(){}[0]
 
     final fun component1(): kotlin/Boolean // io.github.charlietap.chasm.config/RuntimeConfig.component1|component1(){}[0]
     final fun component2(): kotlin/Boolean // io.github.charlietap.chasm.config/RuntimeConfig.component2|component2(){}[0]
-    final fun component3(): io.github.charlietap.chasm.config/Limits // io.github.charlietap.chasm.config/RuntimeConfig.component3|component3(){}[0]
-    final fun copy(kotlin/Boolean = ..., kotlin/Boolean = ..., io.github.charlietap.chasm.config/Limits = ...): io.github.charlietap.chasm.config/RuntimeConfig // io.github.charlietap.chasm.config/RuntimeConfig.copy|copy(kotlin.Boolean;kotlin.Boolean;io.github.charlietap.chasm.config.Limits){}[0]
+    final fun component3(): kotlin/Boolean // io.github.charlietap.chasm.config/RuntimeConfig.component3|component3(){}[0]
+    final fun component4(): io.github.charlietap.chasm.config/Limits // io.github.charlietap.chasm.config/RuntimeConfig.component4|component4(){}[0]
+    final fun copy(kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., io.github.charlietap.chasm.config/Limits = ...): io.github.charlietap.chasm.config/RuntimeConfig // io.github.charlietap.chasm.config/RuntimeConfig.copy|copy(kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;io.github.charlietap.chasm.config.Limits){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.config/RuntimeConfig.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.config/RuntimeConfig.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // io.github.charlietap.chasm.config/RuntimeConfig.toString|toString(){}[0]

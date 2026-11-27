@@ -52,3 +52,39 @@ fun PreparedFunction.unsafeInvokeUnboxed(
 ): ChasmResult<Unit, InvocationError> {
     return engine.unsafeInvokeUnboxed(this, words, references)
 }
+
+@ExperimentalChasmApi
+suspend fun invokeSuspending(
+    instance: Instance,
+    name: String,
+    args: List<ExecutionValue> = emptyList(),
+): ChasmResult<List<ExecutionValue>, InvocationError> {
+    return when (val prepared = prepareFunction(instance, name)) {
+        is ChasmResult.Success -> prepared.result.invokeSuspending(args)
+        is ChasmResult.Error -> prepared
+    }
+}
+
+@ExperimentalChasmApi
+suspend fun PreparedFunction.invokeSuspending(
+    args: List<ExecutionValue> = emptyList(),
+): ChasmResult<List<ExecutionValue>, InvocationError> {
+    return engine.invokeSuspending(this, args)
+}
+
+@ExperimentalChasmApi
+suspend fun PreparedFunction.invokeUnboxedSuspending(
+    words: LongArray,
+    references: Array<Any?>,
+): ChasmResult<Unit, InvocationError> {
+    return engine.invokeUnboxedSuspending(this, words, references)
+}
+
+@ExperimentalChasmApi
+@UnsafeHostApi
+suspend fun PreparedFunction.unsafeInvokeUnboxedSuspending(
+    words: LongArray,
+    references: Array<Any?>,
+): ChasmResult<Unit, InvocationError> {
+    return engine.unsafeInvokeUnboxedSuspending(this, words, references)
+}
