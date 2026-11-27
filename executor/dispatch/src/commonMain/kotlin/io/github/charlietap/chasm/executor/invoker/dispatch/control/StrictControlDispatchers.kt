@@ -5,6 +5,8 @@ package io.github.charlietap.chasm.executor.invoker.dispatch.control
 import io.github.charlietap.chasm.InternalChasmApi
 import io.github.charlietap.chasm.executor.invoker.function.CallSiteResultDestination
 import io.github.charlietap.chasm.executor.invoker.function.HostFunctionCall
+import io.github.charlietap.chasm.executor.invoker.function.finishHostCall
+import io.github.charlietap.chasm.executor.invoker.function.finishReturnHostCall
 import io.github.charlietap.chasm.executor.invoker.function.resultCallSiteIp
 import io.github.charlietap.chasm.executor.invoker.function.returnToCaller
 import io.github.charlietap.chasm.executor.invoker.function.withHostExceptionHandling
@@ -604,7 +606,7 @@ fun HostCallDispatcher(
         operands.isInPlace -> DispatchableInstruction { vstack, context, nextIp ->
             withHostExceptionHandling(vstack, context, nextIp) {
                 HostFunctionCall(vstack, context, caller, function, callFrameOffset, resultSlotBase)
-                nextIp
+                finishHostCall(context, nextIp)
             }
         }
         operand is TransferSource.Immediate -> {
@@ -613,7 +615,7 @@ fun HostCallDispatcher(
                 vstack.setFrameSlot(callFrameOffset, value)
                 withHostExceptionHandling(vstack, context, nextIp) {
                     HostFunctionCall(vstack, context, caller, function, callFrameOffset, resultSlotBase)
-                    nextIp
+                    finishHostCall(context, nextIp)
                 }
             }
         }
@@ -623,7 +625,7 @@ fun HostCallDispatcher(
                 vstack.setFrameSlot(callFrameOffset, vstack.getFrameSlot(sourceSlot))
                 withHostExceptionHandling(vstack, context, nextIp) {
                     HostFunctionCall(vstack, context, caller, function, callFrameOffset, resultSlotBase)
-                    nextIp
+                    finishHostCall(context, nextIp)
                 }
             }
         }
@@ -636,7 +638,7 @@ fun HostCallDispatcher(
             )
             withHostExceptionHandling(vstack, context, nextIp) {
                 HostFunctionCall(vstack, context, caller, function, callFrameOffset, resultSlotBase)
-                nextIp
+                finishHostCall(context, nextIp)
             }
         }
     }
@@ -1114,7 +1116,7 @@ fun ReturnHostCallDispatcher(
         operands.isInPlace -> DispatchableInstruction { vstack, context, nextIp ->
             withHostExceptionHandling(vstack, context, nextIp) {
                 HostFunctionCall(vstack, context, caller, function, callFrameOffset, 0)
-                ReturnExecutor(vstack, context, function.functionType.results.types.size, activationHeaderSlot)
+                finishReturnHostCall(vstack, context, function.functionType.results.types.size, activationHeaderSlot, nextIp)
             }
         }
         operand is TransferSource.Immediate -> {
@@ -1123,7 +1125,7 @@ fun ReturnHostCallDispatcher(
                 vstack.setFrameSlot(callFrameOffset, value)
                 withHostExceptionHandling(vstack, context, nextIp) {
                     HostFunctionCall(vstack, context, caller, function, callFrameOffset, 0)
-                    ReturnExecutor(vstack, context, function.functionType.results.types.size, activationHeaderSlot)
+                    finishReturnHostCall(vstack, context, function.functionType.results.types.size, activationHeaderSlot, nextIp)
                 }
             }
         }
@@ -1133,7 +1135,7 @@ fun ReturnHostCallDispatcher(
                 vstack.setFrameSlot(callFrameOffset, vstack.getFrameSlot(sourceSlot))
                 withHostExceptionHandling(vstack, context, nextIp) {
                     HostFunctionCall(vstack, context, caller, function, callFrameOffset, 0)
-                    ReturnExecutor(vstack, context, function.functionType.results.types.size, activationHeaderSlot)
+                    finishReturnHostCall(vstack, context, function.functionType.results.types.size, activationHeaderSlot, nextIp)
                 }
             }
         }
@@ -1146,7 +1148,7 @@ fun ReturnHostCallDispatcher(
             )
             withHostExceptionHandling(vstack, context, nextIp) {
                 HostFunctionCall(vstack, context, caller, function, callFrameOffset, 0)
-                ReturnExecutor(vstack, context, function.functionType.results.types.size, activationHeaderSlot)
+                finishReturnHostCall(vstack, context, function.functionType.results.types.size, activationHeaderSlot, nextIp)
             }
         }
     }

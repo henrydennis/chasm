@@ -1,19 +1,26 @@
 package io.github.charlietap.chasm.executor.invoker.thread
 
 import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import io.github.charlietap.chasm.InternalChasmApi
 import io.github.charlietap.chasm.config.RuntimeConfig
 import io.github.charlietap.chasm.executor.invoker.diagnostic.TrapSnapshot
 import io.github.charlietap.chasm.executor.invoker.function.initializeLocals
+import io.github.charlietap.chasm.executor.invoker.function.returnToCaller
+import io.github.charlietap.chasm.executor.invoker.function.withHostCallbackScope
+import io.github.charlietap.chasm.executor.invoker.instruction.control.ThrowRefValueExecutor
 import io.github.charlietap.chasm.gc.GuestHeapOutOfMemoryException
+import io.github.charlietap.chasm.host.HostFunctionException
 import io.github.charlietap.chasm.runtime.error.InvocationError
+import io.github.charlietap.chasm.runtime.exception.HostRaisedWasmException
 import io.github.charlietap.chasm.runtime.exception.InvocationException
 import io.github.charlietap.chasm.runtime.execution.ExecutionContext
 import io.github.charlietap.chasm.runtime.execution.NestedInterpreter
 import io.github.charlietap.chasm.runtime.ext.toLongFromBoxed
 import io.github.charlietap.chasm.runtime.instance.FunctionInstance
+import io.github.charlietap.chasm.runtime.program.EXIT_IP
 import io.github.charlietap.chasm.runtime.stack.ValueStack
 import io.github.charlietap.chasm.runtime.store.Store
 import io.github.charlietap.chasm.runtime.store.withLiveStack
@@ -96,6 +103,102 @@ inline fun <R> ThreadInvocation(
     }
 
     results(vstack, resultCount)
+}
+
+@InternalChasmApi
+suspend inline fun <R> ThreadInvocationSuspending(
+    config: RuntimeConfig,
+    store: Store,
+    instance: FunctionInstance.WasmFunction,
+    nested: NestedInterpreter?,
+    crossinline arguments: (ValueStack) -> Unit,
+    crossinline run: (Int, ExecutionContext) -> Unit,
+    crossinline trap: (InvocationException, ValueStack) -> InvocationError,
+    crossinline results: (ValueStack, Int) -> R,
+): Result<R, InvocationError> {
+    val callStrategy = instance.callStrategy
+    val vstack = try {
+        ValueStack(callStrategy.frameSlots, store.maxStackSlots)
+    } catch (exception: InvocationException) {
+        return Err(exception.error)
+    }
+    val context = ExecutionContext(
+        vstack = vstack,
+        store = store,
+        instance = instance.module,
+        config = config,
+    )
+    context.nestedInterpreter = nested
+    context.allowSuspend = true
+
+    val resultCount = instance.functionType.results.types.size
+    vstack.writeRootActivationHeader(callStrategy.interfaceSlotCount)
+    vstack.activateFrame(ROOT_FP, callStrategy.frameSlots)
+    arguments(vstack)
+    initializeLocals(vstack, callStrategy, ROOT_FP)
+
+    store.withLiveStack(vstack) {
+        var ip = callStrategy.entryIp
+        try {
+            while (true) {
+                run(ip, context)
+                val suspension = context.pendingSuspension ?: break
+                context.pendingSuspension = null
+                val resumeIp = context.interpreterResumeIp
+                val returnResultCount = context.interpreterReturnResultCount
+                val returnHeaderSlot = context.interpreterReturnActivationHeaderSlot
+                context.interpreterResumeIp = -1
+                context.interpreterReturnActivationHeaderSlot = -1
+
+                var raisedException = false
+                try {
+                    context.withHostCallbackScope {
+                        suspension.resume()
+                    }
+                } catch (_: HostRaisedWasmException) {
+                    raisedException = true
+                } catch (exception: HostFunctionException) {
+                    throw InvocationException(InvocationError.HostFunctionError(exception.reason)).at(resumeIp - 1)
+                }
+
+                if (raisedException) {
+                    val faultIp = if (resumeIp == store.program.promptReturnIp && context.promptStack.isNotEmpty()) {
+                        val prompt = context.promptStack.removeAt(context.promptStack.lastIndex)
+                        vstack.activateFrameAtDepth(prompt.callerFp, prompt.callerSp)
+                        prompt.resumeCallSiteIp
+                    } else {
+                        resumeIp - 1
+                    }
+                    ip = ThrowRefValueExecutor(vstack, context, context.heap.takePendingExceptionReference(), faultIp)
+                    if (ip == EXIT_IP) break
+                    continue
+                }
+
+                if (returnHeaderSlot >= 0) {
+                    ip = returnToCaller(vstack, store, returnResultCount, returnHeaderSlot)
+                    if (ip == EXIT_IP) break
+                } else {
+                    ip = resumeIp
+                }
+            }
+        } catch (exception: InvocationException) {
+            return Err(trap(exception, vstack))
+        } catch (_: GuestHeapOutOfMemoryException) {
+            return Err(InvocationError.GuestHeapOutOfMemory)
+        } finally {
+            context.pendingSuspension = null
+            context.interpreterResumeIp = -1
+            context.interpreterReturnActivationHeaderSlot = -1
+            context.allowSuspend = false
+            context.promptStack.clear()
+        }
+
+        if (vstack.fp != ROOT_FP || vstack.sp != resultCount) {
+            return Err(InvocationError.ProgramFinishedInconsistentState)
+        }
+    }
+
+    return Ok(results(vstack, resultCount))
 }
 
 @InternalChasmApi

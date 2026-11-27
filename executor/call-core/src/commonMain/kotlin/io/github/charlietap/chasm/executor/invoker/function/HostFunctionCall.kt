@@ -11,6 +11,7 @@ import io.github.charlietap.chasm.runtime.execution.ExecutionContext
 import io.github.charlietap.chasm.runtime.host.RawHostFunction
 import io.github.charlietap.chasm.runtime.instance.FunctionInstance
 import io.github.charlietap.chasm.runtime.instance.ModuleInstance
+import io.github.charlietap.chasm.runtime.program.SUSPEND_IP
 import io.github.charlietap.chasm.runtime.stack.ValueStack
 
 @InternalChasmApi
@@ -62,4 +63,34 @@ inline fun withHostExceptionHandling(
     call()
 } catch (_: HostRaisedWasmException) {
     ThrowRefValueExecutor(vstack, context, context.heap.takePendingExceptionReference(), nextIp - 1)
+}
+
+@InternalChasmApi
+inline fun finishHostCall(
+    context: ExecutionContext,
+    nextIp: Int,
+): Int {
+    if (context.pendingSuspension != null) {
+        context.interpreterResumeIp = nextIp
+        context.interpreterReturnActivationHeaderSlot = -1
+        return SUSPEND_IP
+    }
+    return nextIp
+}
+
+@InternalChasmApi
+inline fun finishReturnHostCall(
+    vstack: ValueStack,
+    context: ExecutionContext,
+    resultCount: Int,
+    activationHeaderSlot: Int,
+    nextIp: Int,
+): Int {
+    if (context.pendingSuspension != null) {
+        context.interpreterResumeIp = nextIp
+        context.interpreterReturnResultCount = resultCount
+        context.interpreterReturnActivationHeaderSlot = activationHeaderSlot
+        return SUSPEND_IP
+    }
+    return returnToCaller(vstack, context.store, resultCount, activationHeaderSlot)
 }

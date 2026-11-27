@@ -23,6 +23,7 @@ import io.github.charlietap.chasm.runtime.instance.FunctionInstance
 import io.github.charlietap.chasm.runtime.instance.ModuleInstance
 import io.github.charlietap.chasm.runtime.instance.PromptHandler
 import io.github.charlietap.chasm.runtime.instance.PromptRecord
+import io.github.charlietap.chasm.runtime.program.SUSPEND_IP
 import io.github.charlietap.chasm.runtime.stack.ValueStack
 import io.github.charlietap.chasm.runtime.stack.activationHeader
 import io.github.charlietap.chasm.runtime.store.Store
@@ -373,6 +374,11 @@ private fun activateContinuation(
                     parameterSlotBase = 0,
                     resultSlotBase = 0,
                 )
+                if (context.pendingSuspension != null) {
+                    context.interpreterResumeIp = context.store.program.ensurePromptReturn(PROMPT_RETURN_INSTRUCTION)
+                    context.interpreterReturnActivationHeaderSlot = -1
+                    return SUSPEND_IP
+                }
                 context.promptStack.removeAt(context.promptStack.lastIndex)
                 val dest = prompt.resultDestinationSlot
                 if (dest != null && prompt.resultCount > 0) {

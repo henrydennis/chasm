@@ -6,6 +6,8 @@ import io.github.charlietap.chasm.InternalChasmApi
 import io.github.charlietap.chasm.executor.invoker.function.HostFunctionCall
 import io.github.charlietap.chasm.executor.invoker.function.ReturnWasmFunctionCall
 import io.github.charlietap.chasm.executor.invoker.function.WasmFunctionCall
+import io.github.charlietap.chasm.executor.invoker.function.finishHostCall
+import io.github.charlietap.chasm.executor.invoker.function.finishReturnHostCall
 import io.github.charlietap.chasm.executor.invoker.function.withHostExceptionHandling
 import io.github.charlietap.chasm.runtime.error.InvocationError
 import io.github.charlietap.chasm.runtime.exception.InvocationException
@@ -162,7 +164,7 @@ internal fun strictInvokeFunction(
                 parameterSlotBase = callFrameOffset,
                 resultSlotBase = resultDestinationSlot ?: callFrameOffset,
             )
-            returnIp
+            finishHostCall(context, returnIp)
         }
     }
     is FunctionInstance.WasmFunction -> WasmFunctionCall(
@@ -201,11 +203,12 @@ internal fun strictInvokeReturnFunction(
                 parameterSlotBase = callFrameOffset,
                 resultSlotBase = 0,
             )
-            ReturnExecutor(
-                vstack,
-                context,
-                functionInstance.functionType.results.types.size,
-                callerActivationHeaderSlot,
+            finishReturnHostCall(
+                vstack = vstack,
+                context = context,
+                resultCount = functionInstance.functionType.results.types.size,
+                activationHeaderSlot = callerActivationHeaderSlot,
+                nextIp = nextIp,
             )
         }
     }

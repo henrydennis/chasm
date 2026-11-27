@@ -1,11 +1,15 @@
 package io.github.charlietap.chasm.embedding.internal
 
+import io.github.charlietap.chasm.ExperimentalChasmApi
 import io.github.charlietap.chasm.host.HostFunction
 import io.github.charlietap.chasm.host.HostFunctionException
 import io.github.charlietap.chasm.host.HostParameters
 import io.github.charlietap.chasm.host.HostResults
 import io.github.charlietap.chasm.host.HostStack
+import io.github.charlietap.chasm.host.SuspendHostFunction
+import io.github.charlietap.chasm.host.UnsafeHostApi
 import io.github.charlietap.chasm.runtime.execution.ExecutionContext
+import io.github.charlietap.chasm.runtime.execution.PendingSuspension
 import io.github.charlietap.chasm.runtime.host.RawHostFunction
 import io.github.charlietap.chasm.runtime.host.RawHostModuleInstance
 import io.github.charlietap.chasm.runtime.host.RawHostResources
@@ -16,6 +20,12 @@ internal interface HostCallAdapters {
     fun adapt(
         type: FunctionType,
         function: HostFunction,
+    ): RawHostFunction
+
+    @OptIn(ExperimentalChasmApi::class)
+    fun adaptSuspending(
+        type: FunctionType,
+        function: SuspendHostFunction,
     ): RawHostFunction
 }
 
@@ -37,6 +47,22 @@ internal class InterpreterHostCallAdapters(
             NumericHostCall(function, resources)
         } else {
             ReferenceHostCall(function, parameterSlots, resultSlots, codec, lanes, resources)
+        }
+    }
+
+    @OptIn(ExperimentalChasmApi::class)
+    override fun adaptSuspending(
+        type: FunctionType,
+        function: SuspendHostFunction,
+    ): RawHostFunction {
+
+        val parameterSlots = codec.slots(type.params.types)
+        val resultSlots = codec.slots(type.results.types)
+
+        return if (parameterSlots.isEmpty && resultSlots.isEmpty) {
+            NumericSuspendHostCall(type, function, resources)
+        } else {
+            ReferenceSuspendHostCall(type, function, parameterSlots, resultSlots, codec, resources)
         }
     }
 }
@@ -168,5 +194,119 @@ internal class ReferenceLanes {
     private companion object {
         const val INITIAL_DEPTH = 4
         const val MINIMUM_SIZE = 16
+    }
+}
+
+@OptIn(ExperimentalChasmApi::class, UnsafeHostApi::class)
+internal class NumericSuspendHostCall(
+    type: FunctionType,
+    private val function: SuspendHostFunction,
+    private val resources: InterpreterHostResources,
+) : RawHostFunction {
+
+    private val parameterCount = type.params.types.size
+    private val resultCount = type.results.types.size
+    private val slotCount = maxOf(parameterCount, resultCount, 1)
+
+    context(stack: HostStack, module: RawHostModuleInstance, raw: RawHostResources)
+    override fun invoke(
+        parameters: HostParameters,
+        results: HostResults,
+    ) {
+        val context = raw as ExecutionContext
+        requireSuspendable(context)
+
+        val hostWords = LongArray(slotCount)
+        if (parameterCount > 0) {
+            stack.copyInto(hostWords, 0, parameters, parameters + parameterCount)
+        }
+
+        context.pendingSuspension = object : PendingSuspension {
+            override suspend fun resume() {
+                context(hostWords, NO_REFERENCES, resources.module(module, context), resources) {
+                    function.invoke(0, 0)
+                }
+                if (resultCount > 0) {
+                    hostWords.copyInto(context.vstack.unsafeElements(), results, 0, resultCount)
+                }
+            }
+        }
+    }
+
+    private companion object {
+        val NO_REFERENCES = arrayOfNulls<Any>(0)
+    }
+}
+
+@OptIn(ExperimentalChasmApi::class, UnsafeHostApi::class)
+internal class ReferenceSuspendHostCall(
+    type: FunctionType,
+    private val function: SuspendHostFunction,
+    private val parameterSlots: ReferenceSlots,
+    private val resultSlots: ReferenceSlots,
+    private val codec: ReferenceCodec,
+    private val resources: InterpreterHostResources,
+) : RawHostFunction {
+
+    private val parameterCount = type.params.types.size
+    private val resultCount = type.results.types.size
+    private val slotCount = maxOf(parameterCount, resultCount, 1)
+
+    context(stack: HostStack, module: RawHostModuleInstance, raw: RawHostResources)
+    override fun invoke(
+        parameters: HostParameters,
+        results: HostResults,
+    ) {
+        val context = raw as ExecutionContext
+        requireSuspendable(context)
+
+        val hostWords = LongArray(slotCount)
+        if (parameterCount > 0) {
+            stack.copyInto(hostWords, 0, parameters, parameters + parameterCount)
+        }
+
+        context.pendingSuspension = object : PendingSuspension {
+            override suspend fun resume() {
+                val lane = arrayOfNulls<Any>(slotCount)
+                for (index in parameterSlots.valueIndices) {
+                    lane[index] = codec.decode(hostWords[index])
+                }
+
+                context(hostWords, lane, resources.module(module, context), resources) {
+                    function.invoke(0, 0)
+                }
+
+                val valueIndices = resultSlots.valueIndices
+                val types = resultSlots.types
+                for (position in valueIndices.indices) {
+                    val index = valueIndices[position]
+                    hostWords[index] = encodeResult(types[position], lane[index], index)
+                }
+                if (resultCount > 0) {
+                    hostWords.copyInto(context.vstack.unsafeElements(), results, 0, resultCount)
+                }
+            }
+        }
+    }
+
+    private fun encodeResult(
+        type: ResolvedReferenceType,
+        value: Any?,
+        index: Int,
+    ): Long {
+        return try {
+            codec.encode(type, value)
+        } catch (exception: IllegalArgumentException) {
+            throw HostFunctionException("result $index: ${exception.message}")
+        }
+    }
+}
+
+private fun requireSuspendable(context: ExecutionContext) {
+    if (!context.allowSuspend) {
+        throw HostFunctionException("cannot call a suspending host function from a synchronous invocation")
+    }
+    if (!context.config.suspendable) {
+        throw HostFunctionException("the store was not configured with RuntimeConfig(suspendable = true)")
     }
 }

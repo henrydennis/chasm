@@ -1,13 +1,16 @@
 package io.github.charlietap.chasm.integration
 
 import com.goncalossilva.resources.Resource
+import io.github.charlietap.chasm.ExperimentalChasmApi
 import io.github.charlietap.chasm.config.ModuleConfig
 import io.github.charlietap.chasm.config.Proposal
+import io.github.charlietap.chasm.config.RuntimeConfig
 import io.github.charlietap.chasm.embedding.collect
 import io.github.charlietap.chasm.embedding.error.ExecutionError
 import io.github.charlietap.chasm.embedding.function
 import io.github.charlietap.chasm.embedding.instance
 import io.github.charlietap.chasm.embedding.invoke
+import io.github.charlietap.chasm.embedding.invokeSuspending
 import io.github.charlietap.chasm.embedding.module
 import io.github.charlietap.chasm.embedding.shapes.ChasmResult
 import io.github.charlietap.chasm.embedding.shapes.Import
@@ -15,6 +18,7 @@ import io.github.charlietap.chasm.embedding.shapes.Instance
 import io.github.charlietap.chasm.embedding.shapes.Store
 import io.github.charlietap.chasm.embedding.shapes.expect
 import io.github.charlietap.chasm.embedding.store
+import io.github.charlietap.chasm.embedding.suspendFunction
 import io.github.charlietap.chasm.embedding.value.NumberValue.I32
 import io.github.charlietap.chasm.host.readI32
 import io.github.charlietap.chasm.host.writeI32
@@ -23,6 +27,7 @@ import io.github.charlietap.chasm.type.NumberType
 import io.github.charlietap.chasm.type.ResultType
 import io.github.charlietap.chasm.type.ValueType
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -157,6 +162,39 @@ class StackSwitchingTest {
         val result = invoke(instance, "trap_unhandled_switch")
         val error = assertIs<ChasmResult.Error<ExecutionError>>(result).error
         assertIs<ExecutionError.Trapped>(error)
+    }
+
+    @OptIn(ExperimentalChasmApi::class)
+    @Test
+    fun `cont new can wrap and resume a suspending host function`() = runTest {
+        val store = store(RuntimeConfig(suspendable = true))
+        val bytes = Resource(MODULE_PATH).readBytes()
+        val decoded = module(bytes, stackSwitchingConfig).expect("stack_switching.wasm should decode and validate")
+        val gcHost = function(
+            store = store,
+            type = FunctionType(ResultType(emptyList()), ResultType(emptyList())),
+        ) { _, _ ->
+            collect(store)
+        }
+        val addHost = suspendFunction(
+            store = store,
+            type = FunctionType(
+                ResultType(listOf(ValueType.Number(NumberType.I32), ValueType.Number(NumberType.I32))),
+                ResultType(listOf(ValueType.Number(NumberType.I32))),
+            ),
+        ) { args, results ->
+            yield()
+            results.writeI32(0, args.readI32(0) + args.readI32(1))
+        }
+        val instance = instance(
+            store = store,
+            module = decoded,
+            imports = listOf(Import("env", "gc", gcHost), Import("env", "add_host", addHost)),
+        ).expect("stack_switching.wasm should instantiate")
+
+        val result = invokeSuspending(instance, "host_cont_resume", listOf(I32(17), I32(25)))
+            .expect("host_cont_resume with suspending host should succeed")
+        assertEquals(listOf(I32(42)), result)
     }
 
     private suspend fun instantiate(): Pair<Store, Instance> {
