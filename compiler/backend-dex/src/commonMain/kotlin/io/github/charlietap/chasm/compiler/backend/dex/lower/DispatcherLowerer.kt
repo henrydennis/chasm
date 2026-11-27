@@ -67,6 +67,10 @@ internal fun LowerContext.lowerDispatcher(
     val missing = emit.freshLabel()
     val leave = emit.freshLabel()
     val calls = emit.labels(chunks.size)
+    if (isSuspendable) {
+        emit.const(Registers.I0, 0)
+        emit.move(registers.lastChunk, Registers.I0)
+    }
     emit.const(Registers.NARROW, 0)
     emit.place(loop)
     emit.branchZero(Cond.Lt, Registers.NARROW, negative)
