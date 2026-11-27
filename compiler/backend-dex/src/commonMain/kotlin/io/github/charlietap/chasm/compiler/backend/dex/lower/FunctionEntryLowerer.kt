@@ -43,22 +43,15 @@ internal fun LowerContext.lowerPrologue() {
     cachesLoaded = true
     openWindow()
     if (isSuspendable) {
-        if (facts.window.callBufferWords > 0) {
-            emit.const(Registers.I0, 0)
-            emit.moveObject(registers.callBuffer, Registers.I0)
-        }
+        lowerResumeEntryCheck()
         emit.const(Registers.I0, 0)
         emit.moveObject(registers.suspendCallee, Registers.I0)
-        initializeLocals()
-        lowerResumeEntryCheck()
-        receiveParameters()
-    } else {
-        receiveParameters()
-        initializeLocals()
-        if (facts.window.callBufferWords > 0) {
-            emit.const(Registers.I0, 0)
-            emit.moveObject(registers.callBuffer, Registers.I0)
-        }
+    }
+    receiveParameters()
+    initializeLocals()
+    if (facts.window.callBufferWords > 0) {
+        emit.const(Registers.I0, 0)
+        emit.moveObject(registers.callBuffer, Registers.I0)
     }
 }
 
@@ -138,11 +131,10 @@ private fun LowerContext.receiveParameters() {
 internal fun LowerContext.initializeLocals() {
 
     val initial = facts.frame.initialValues
-    val firstTemporary = if (module.analysis.usesExceptions || isSuspendable) frameSlots else facts.frame.firstTemporary
-    val startSlot = if (isSuspendable) 0 else parameterCount
+    val firstTemporary = if (module.analysis.usesExceptions) frameSlots else facts.frame.firstTemporary
 
     var zeroed = false
-    for (slot in startSlot until frameSlots) {
+    for (slot in parameterCount until frameSlots) {
 
         if (slot >= firstTemporary || kinds.homeMask(slot) == 0) {
             continue

@@ -46,6 +46,7 @@ internal fun LowerContext.lowerChunkBody() {
         emit.store(Opcodes.LSTORE, locals.stackSaved)
     }
     loadSlots(chunk, reloaded)
+    lowerResumeEntryCheck()
     val entries = chunk.entries
     val unknown = emit.label()
     emit.load(Opcodes.ILOAD, locals.argumentLocals[1])

@@ -113,7 +113,7 @@ private class FunctionLowering(
         function.redundantBoundsChecks(table)
     }
 
-    private val facts = FunctionFacts(module, function, frame, slotKindFlow, checkedAccesses)
+    private val facts = FunctionFacts(module, function, frame, table, slotKindFlow, checkedAccesses)
 
     private fun inlineMemory(
         positions: IntRange,
@@ -143,9 +143,6 @@ private class FunctionLowering(
         val whole = whole(slotKinds)
         val fits = whole?.node?.takeIf { node -> methodSize.of(node, finish(node)) <= limit }
         if (fits != null && module.options.splitInstructions == null) return listOf(GeneratedMethod(null, fits))
-        if (module.options.suspendable && module.analysis.maySuspend[function.index.index]) {
-            throw Unsupported("suspendable function f${function.index.index} exceeds single-method size limit")
-        }
         val liveness = whole?.takeIf { lowered ->
             lowered.node.instructions.size().toLong() * ((lowered.locals.size + 63) / 64) <= MAX_LIVENESS_WORDS
         }?.let { lowered ->

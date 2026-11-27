@@ -132,7 +132,7 @@ internal class FunctionLowering(
             return Attempt.TooLarge(inlinedAccesses = false, homes = reusable)
         }
 
-        val firstTemporary = if (module.analysis.usesExceptions || suspendable) facts.frame.frameSlots else facts.frame.firstTemporary
+        val firstTemporary = if (module.analysis.usesExceptions) facts.frame.frameSlots else facts.frame.firstTemporary
         val initialised = BooleanArray(facts.frame.frameSlots) { slot -> slot < firstTemporary }
         val homes = reusable?.takeIf { candidate -> candidate.reusableFor(initialised) }
             ?: RegisterHomes(slotKindAnalyzer.analyze(function, facts.table, facts.frame, initialised), initialised)
@@ -175,12 +175,9 @@ internal class FunctionLowering(
         reusable: RegisterHomes?,
     ): Attempt {
 
-        if (module.options.suspendable && module.analysis.maySuspend[function.index.index]) {
-            return Attempt.Rejected("suspendable function f${function.index.index} exceeds single-method size limit")
-        }
-
+        val suspendable = module.options.suspendable && module.analysis.maySuspend[function.index.index]
         val analysis = whole?.analysis ?: analyzeFunction(module, function, facts, facts.memoryMode)
-        if (chunkRegisters(function, analysis, null, null).count > MAX_REGISTERS) {
+        if (chunkRegisters(function, analysis, null, null, suspendable = suspendable).count > MAX_REGISTERS) {
             return Attempt.Refused(FRAME_TOO_LARGE)
         }
 
@@ -210,7 +207,7 @@ internal class FunctionLowering(
             }
 
             val table = dispatchTable(chunks, splitFacts)
-            val registers = dispatcherRegisters(analysis)
+            val registers = dispatcherRegisters(analysis, suspendable = suspendable)
             val slotFrameCost = (facts.frame.frameSlots * 8 + 31) / 32
             val cost = frameCost(registers) + chunks.maxOf { chunk -> chunk.cost } + slotFrameCost
             module.constants.beginMethod()
@@ -372,7 +369,10 @@ private fun functionRegisters(
 
 private const val FRAME_TOO_LARGE = "frame too large"
 
-private fun dispatcherRegisters(analysis: FunctionAnalysis): Registers {
+private fun dispatcherRegisters(
+    analysis: FunctionAnalysis,
+    suspendable: Boolean = false,
+): Registers {
     return Registers(
         frameSlots = 0,
         temporaries = 0,
@@ -384,6 +384,7 @@ private fun dispatcherRegisters(analysis: FunctionAnalysis): Registers {
         savesStack = true,
         callBuffer = false,
         chunk = true,
+        suspendable = suspendable,
     )
 }
 

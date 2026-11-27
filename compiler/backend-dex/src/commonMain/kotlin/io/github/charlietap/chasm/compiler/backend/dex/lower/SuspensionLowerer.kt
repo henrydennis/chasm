@@ -1,6 +1,7 @@
 package io.github.charlietap.chasm.compiler.backend.dex.lower
 
 import io.github.charlietap.chasm.compiler.backend.abi.CONTEXT_TYPE
+import io.github.charlietap.chasm.compiler.backend.abi.FRAME
 import io.github.charlietap.chasm.compiler.backend.abi.OBJECT_TYPE
 import io.github.charlietap.chasm.compiler.backend.abi.POP_SUSPENDED_FRAME
 import io.github.charlietap.chasm.compiler.backend.abi.PUSH_SUSPENDED_FRAME
@@ -27,6 +28,8 @@ private const val OBJECT_ARRAY = "[Ljava/lang/Object;"
 internal class SuspendSite(
     val id: Int,
     val resumeLabel: Label,
+    val liveNumbers: List<Pair<Int, Byte>>,
+    val liveObjects: List<Int>,
     val emitResume: () -> Unit,
 )
 
@@ -46,8 +49,20 @@ internal fun LowerContext.suspendCheck(
     val siteId = suspendSites.size
     val suspendLabel = emit.freshLabel()
     val resumeLabel = emit.freshLabel()
-    suspendSites += SuspendSite(siteId, resumeLabel) {
+    val (liveNumbers, liveObjects) = if (registers.records) {
+        emptyList<Pair<Int, Byte>>() to emptyList()
+    } else {
+        collectLiveHomes(position)
+    }
+
+    suspendSites += SuspendSite(siteId, resumeLabel, liveNumbers, liveObjects) {
         emit.place(resumeLabel)
+        if (chunk == null) {
+            restoreWholeSiteSlots(liveNumbers, liveObjects)
+        } else {
+            restoreChunkSiteSlots(liveNumbers, liveObjects)
+        }
+        openWindow()
         emitResumeCall()
         emit.gotoLabel(afterInvoke)
     }
@@ -57,7 +72,11 @@ internal fun LowerContext.suspendCheck(
 
     outOfLine += {
         emit.place(suspendLabel)
-        emitSaveFrameAndReturn(siteId, hasCallee)
+        if (chunk == null) {
+            emitWholeSaveFrameAndReturn(siteId, hasCallee, liveNumbers, liveObjects)
+        } else {
+            emitChunkSaveFrameAndReturn(siteId, hasCallee, liveNumbers, liveObjects)
+        }
     }
 }
 
@@ -94,39 +113,61 @@ internal fun LowerContext.loadDummyWindow(
     return words
 }
 
-private fun LowerContext.collectHomes(): Pair<List<Pair<Int, Byte>>, List<Int>> {
+private fun LowerContext.collectLiveHomes(
+    callPosition: Int,
+): Pair<List<Pair<Int, Byte>>, List<Int>> {
+    val liveSlots = checkNotNull(suspendLiveness).liveAfterCall(callPosition)
     val numbers = ArrayList<Pair<Int, Byte>>()
     val objects = ArrayList<Int>()
-    for (slot in 0 until frameSlots) {
-        forEachHome(slot) { kind ->
-            if (kind == SlotKindFlow.OBJECT) {
-                objects += slot
-            } else {
-                numbers += slot to kind
+    for (slot in liveSlots) {
+        if (!registers.holds(slot)) continue
+        val state = kinds.state(slot)
+        when {
+            SlotKindFlow.definite(state) && registers.holds(slot, state) -> {
+                if (state == SlotKindFlow.OBJECT) {
+                    objects += slot
+                } else {
+                    numbers += slot to state
+                }
+            }
+            state == SlotKindFlow.ANY_NARROW || state == SlotKindFlow.ANY_WIDE -> {
+                val kind = anyHome(registers.heldMask(slot), SlotKindFlow.LONG)
+                if (kind != SlotKindFlow.NONE) {
+                    numbers += slot to kind
+                }
+            }
+            else -> {
+                forEachHome(slot) { kind ->
+                    if (kind == SlotKindFlow.OBJECT) {
+                        objects += slot
+                    } else {
+                        numbers += slot to kind
+                    }
+                }
             }
         }
     }
     return numbers to objects
 }
 
-private fun LowerContext.emitSaveFrameAndReturn(
+private fun LowerContext.emitWholeSaveFrameAndReturn(
     siteId: Int,
     hasCallee: Boolean,
+    liveNumbers: List<Pair<Int, Byte>>,
+    liveObjects: List<Int>,
 ) {
-    val (numbers, objects) = collectHomes()
-
-    emit.const(Registers.I0, numbers.size)
+    emit.const(Registers.I0, liveNumbers.size)
     emit.newArray(Registers.SECOND_OBJECT, Registers.I0, "[J")
-    numbers.forEachIndexed { index, (slot, kind) ->
+    liveNumbers.forEachIndexed { index, (slot, kind) ->
         loadEncoded(Registers.W0, slot, kind)
         emit.const(Registers.I1, index)
         emit.arrayPut(ArrayKind.Wide, Registers.W0, Registers.SECOND_OBJECT, Registers.I1)
     }
 
-    if (objects.isNotEmpty()) {
-        emit.const(Registers.I0, objects.size)
+    if (liveObjects.isNotEmpty()) {
+        emit.const(Registers.I0, liveObjects.size)
         emit.newArray(Registers.THIRD_OBJECT, Registers.I0, OBJECT_ARRAY)
-        objects.forEachIndexed { index, slot ->
+        liveObjects.forEachIndexed { index, slot ->
             emit.moveObject(Registers.OBJECT, registers.home(slot, SlotKindFlow.OBJECT))
             emit.const(Registers.I1, index)
             emit.arrayPut(ArrayKind.Object, Registers.OBJECT, Registers.THIRD_OBJECT, Registers.I1)
@@ -145,6 +186,42 @@ private fun LowerContext.emitSaveFrameAndReturn(
     returnAnything()
 }
 
+private fun LowerContext.emitChunkSaveFrameAndReturn(
+    siteId: Int,
+    hasCallee: Boolean,
+    liveNumbers: List<Pair<Int, Byte>>,
+    liveObjects: List<Int>,
+) {
+    if (!registers.records) {
+        if (liveNumbers.isNotEmpty()) {
+            emit.invoke(FRAME, Registers.CONTEXT)
+            emit.moveResultObject(Registers.OBJECT)
+            for ((slot, kind) in liveNumbers) {
+                loadEncoded(Registers.W0, slot, kind)
+                frameIndex(Registers.I2, slot)
+                emit.arrayPut(ArrayKind.Wide, Registers.W0, Registers.OBJECT, Registers.I2)
+            }
+        }
+        for (slot in liveObjects) {
+            emit.moveObject(Registers.THIRD_OBJECT, registers.home(slot, SlotKindFlow.OBJECT))
+            spillReference(slot, Registers.THIRD_OBJECT)
+        }
+    }
+
+    emit.const(Registers.I0, 0)
+    emit.newArray(Registers.SECOND_OBJECT, Registers.I0, "[J")
+    emit.const(Registers.THIRD_OBJECT, 0)
+    if (hasCallee) {
+        emit.moveObject(Registers.OBJECT, registers.suspendCallee)
+    } else {
+        emit.const(Registers.OBJECT, 0)
+    }
+    emit.const(Registers.I0, siteId)
+    emit.invoke(PUSH_SUSPENDED_FRAME, Registers.CONTEXT, Registers.I0, Registers.SECOND_OBJECT, Registers.THIRD_OBJECT, Registers.OBJECT)
+    emit.const(Registers.I0, Chunk.SUSPEND)
+    emit.returnValue(Registers.I0)
+}
+
 internal fun LowerContext.lowerSuspensionDispatch() {
     val dispatch = resumeDispatchLabel ?: return
     emit.place(dispatch)
@@ -153,7 +230,18 @@ internal fun LowerContext.lowerSuspensionDispatch() {
         return
     }
 
-    val (numbers, objects) = collectHomes()
+    if (chunk == null) {
+        lowerWholeSuspensionDispatch()
+    } else {
+        lowerChunkSuspensionDispatch()
+    }
+}
+
+private fun LowerContext.lowerWholeSuspensionDispatch() {
+    if (facts.window.callBufferWords > 0) {
+        emit.const(Registers.I0, 0)
+        emit.moveObject(registers.callBuffer, Registers.I0)
+    }
 
     emit.invoke(POP_SUSPENDED_FRAME, Registers.CONTEXT)
     emit.moveResultObject(Registers.OBJECT)
@@ -164,37 +252,80 @@ internal fun LowerContext.lowerSuspensionDispatch() {
     emit.getField(Registers.SECOND_OBJECT, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_CALLEE_FIELD, OBJECT_TYPE)
     emit.moveObject(registers.suspendCallee, Registers.SECOND_OBJECT)
 
-    if (objects.isNotEmpty()) {
+    if (suspendSites.any { site -> site.liveObjects.isNotEmpty() }) {
         emit.getField(Registers.THIRD_OBJECT, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_OBJECTS_FIELD, OBJECT_ARRAY)
         emit.moveObject(registers.window + 1, Registers.THIRD_OBJECT)
     }
 
-    if (numbers.isNotEmpty()) {
+    if (suspendSites.any { site -> site.liveNumbers.isNotEmpty() }) {
         emit.getField(Registers.SECOND_OBJECT, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_WORDS_FIELD, "[J")
         emit.moveObject(registers.window + 2, Registers.SECOND_OBJECT)
     }
 
-    numbers.forEachIndexed { index, (slot, kind) ->
+    refreshMemory()
+    emit.move(Registers.I3, registers.window)
+    emit.packedSwitch(Registers.I3, 0, suspendSites.map { site -> site.resumeLabel })
+    trap(UNREACHABLE)
+
+    suspendSites.forEach { site -> site.emitResume() }
+}
+
+private fun LowerContext.lowerChunkSuspensionDispatch() {
+    emit.invoke(POP_SUSPENDED_FRAME, Registers.CONTEXT)
+    emit.moveResultObject(Registers.OBJECT)
+
+    emit.getField(Registers.I0, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_SITE_FIELD, "I")
+    emit.move(registers.window, Registers.I0)
+
+    emit.getField(Registers.SECOND_OBJECT, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_CALLEE_FIELD, OBJECT_TYPE)
+    emit.moveObject(registers.suspendCallee, Registers.SECOND_OBJECT)
+
+    if (chunk?.usesMemory == true) refreshMemory()
+    emit.move(Registers.I3, registers.window)
+    emit.packedSwitch(Registers.I3, 0, suspendSites.map { site -> site.resumeLabel })
+    trap(UNREACHABLE)
+
+    suspendSites.forEach { site -> site.emitResume() }
+}
+
+private fun LowerContext.restoreWholeSiteSlots(
+    liveNumbers: List<Pair<Int, Byte>>,
+    liveObjects: List<Int>,
+) {
+    liveNumbers.forEachIndexed { index, (slot, kind) ->
         emit.moveObject(Registers.SECOND_OBJECT, registers.window + 2)
         emit.const(Registers.I1, index)
         emit.arrayGet(ArrayKind.Wide, Registers.W0, Registers.SECOND_OBJECT, Registers.I1)
         decodeInto(slot, kind, Registers.W0)
     }
-
-    if (objects.isNotEmpty()) {
+    if (liveObjects.isNotEmpty()) {
         emit.moveObject(Registers.THIRD_OBJECT, registers.window + 1)
-        objects.forEachIndexed { index, slot ->
+        liveObjects.forEachIndexed { index, slot ->
             emit.const(Registers.I1, index)
             emit.arrayGet(ArrayKind.Object, Registers.OBJECT, Registers.THIRD_OBJECT, Registers.I1)
             emit.moveObject(registers.home(slot, SlotKindFlow.OBJECT), Registers.OBJECT)
         }
     }
+}
 
-    refreshMemory()
-    emit.move(Registers.I3, registers.window)
-    openWindow()
-    emit.packedSwitch(Registers.I3, 0, suspendSites.map { site -> site.resumeLabel })
-    trap(UNREACHABLE)
-
-    suspendSites.forEach { site -> site.emitResume() }
+private fun LowerContext.restoreChunkSiteSlots(
+    liveNumbers: List<Pair<Int, Byte>>,
+    liveObjects: List<Int>,
+) {
+    if (registers.records) return
+    if (liveNumbers.isNotEmpty()) {
+        emit.invoke(FRAME, Registers.CONTEXT)
+        emit.moveResultObject(Registers.OBJECT)
+        for ((slot, kind) in liveNumbers) {
+            frameIndex(Registers.I2, slot)
+            emit.arrayGet(ArrayKind.Wide, Registers.W0, Registers.OBJECT, Registers.I2)
+            decodeInto(slot, kind, Registers.W0)
+        }
+    }
+    for (slot in liveObjects) {
+        emit.moveObject(Registers.SECOND_OBJECT, registers.objectFrame)
+        emit.const(Registers.I1, slot)
+        emit.arrayGet(ArrayKind.Object, Registers.THIRD_OBJECT, Registers.SECOND_OBJECT, Registers.I1)
+        emit.moveObject(registers.home(slot, SlotKindFlow.OBJECT), Registers.THIRD_OBJECT)
+    }
 }

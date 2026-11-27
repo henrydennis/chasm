@@ -38,6 +38,8 @@ internal class Chunk(
 
         const val LEAVE_WITHOUT_RESULT = -2
 
-        const val DYNAMIC_EXIT_BASE = -3
+        const val SUSPEND = -3
+
+        const val DYNAMIC_EXIT_BASE = -4
     }
 }

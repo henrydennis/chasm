@@ -5,6 +5,7 @@ import io.github.charlietap.chasm.cir.InstructionIndex
 import io.github.charlietap.chasm.compiler.backend.abi.MethodRef
 import io.github.charlietap.chasm.compiler.backend.abi.Resource
 import io.github.charlietap.chasm.compiler.backend.analysis.ModuleIndexSpaces
+import io.github.charlietap.chasm.compiler.backend.analysis.SuspendLiveness
 import io.github.charlietap.chasm.compiler.backend.analysis.form.InstructionForms
 import io.github.charlietap.chasm.compiler.backend.dex.ModuleLowering
 import io.github.charlietap.chasm.compiler.backend.dex.analysis.FunctionAnalysis
@@ -89,7 +90,15 @@ internal class LowerContext(
 
     val matcherLabels = emit.labels(function.exceptions?.regions?.size ?: 0)
 
-    val isSuspendable: Boolean get() = module.options.suspendable && module.analysis.maySuspend[function.index.index] && chunk == null
+    val isSuspendable: Boolean get() = module.options.suspendable && module.analysis.maySuspend[function.index.index]
+
+    val suspendLiveness: SuspendLiveness? by lazy(LazyThreadSafetyMode.NONE) {
+        if (isSuspendable) {
+            SuspendLiveness(function, facts.table, frameSlots)
+        } else {
+            null
+        }
+    }
 
     var resumeDispatchLabel: Label? = null
 

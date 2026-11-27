@@ -1,6 +1,9 @@
 package io.github.charlietap.chasm.compiler.backend.jvm.lower
 
 import io.github.charlietap.chasm.compiler.backend.abi.CONTEXT_TYPE
+import io.github.charlietap.chasm.compiler.backend.abi.DOUBLE_TO_RAW_LONG_BITS
+import io.github.charlietap.chasm.compiler.backend.abi.FLOAT_TO_RAW_INT_BITS
+import io.github.charlietap.chasm.compiler.backend.abi.FRAME
 import io.github.charlietap.chasm.compiler.backend.abi.INT_BITS_TO_FLOAT
 import io.github.charlietap.chasm.compiler.backend.abi.LONG_BITS_TO_DOUBLE
 import io.github.charlietap.chasm.compiler.backend.abi.OBJECT_TYPE
@@ -26,6 +29,8 @@ import org.objectweb.asm.Opcodes
 internal class SuspendSite(
     val id: Int,
     val resumeLabel: Label,
+    val liveNumbers: IntArray,
+    val liveObjects: IntArray,
     val emitResume: () -> Unit,
 )
 
@@ -46,8 +51,21 @@ internal fun LowerContext.suspendCheck(
     val siteId = suspendSites.size
     val suspendLabel = emit.label()
     val resumeLabel = emit.label()
-    suspendSites += SuspendSite(siteId, resumeLabel) {
+    val liveSlots = if (locals.isRecording) {
+        IntArray(0)
+    } else {
+        checkNotNull(facts.suspendLiveness).liveAfterCall(position)
+    }
+    val liveNumbers = liveSlots.filter { slot -> locals.holdsNumber(slot) }.toIntArray()
+    val liveObjects = liveSlots.filter { slot -> locals.holdsObject(slot) }.toIntArray()
+
+    suspendSites += SuspendSite(siteId, resumeLabel, liveNumbers, liveObjects) {
         emit.place(resumeLabel)
+        if (chunk == null) {
+            restoreWholeSiteSlots(liveNumbers, liveObjects)
+        } else {
+            restoreChunkSiteSlots(liveNumbers, liveObjects)
+        }
         emitResumeCall()
         emit.jump(Opcodes.GOTO, afterInvoke)
     }
@@ -58,7 +76,11 @@ internal fun LowerContext.suspendCheck(
 
     outOfLine += {
         emit.place(suspendLabel)
-        emitSaveFrameAndReturn(siteId, hasCallee)
+        if (chunk == null) {
+            emitWholeSaveFrameAndReturn(siteId, hasCallee, liveNumbers, liveObjects)
+        } else {
+            emitChunkSaveFrameAndReturn(siteId, hasCallee, liveNumbers, liveObjects)
+        }
     }
 }
 
@@ -83,28 +105,28 @@ internal fun LowerContext.pushDummyCallArguments(
     }
 }
 
-private fun LowerContext.emitSaveFrameAndReturn(
+private fun LowerContext.emitWholeSaveFrameAndReturn(
     siteId: Int,
     hasCallee: Boolean,
+    liveNumbers: IntArray,
+    liveObjects: IntArray,
 ) {
-    emit.int(frame.frameSlots)
+    emit.int(liveNumbers.size)
     emit.newLongArray()
-    for (slot in 0 until frame.frameSlots) {
-        if (!locals.holdsNumber(slot)) continue
+    liveNumbers.forEachIndexed { index, slot ->
         emit.insn(Opcodes.DUP)
-        emit.int(slot)
+        emit.int(index)
         pushLong(Operand.Slot(slot))
         emit.insn(Opcodes.LASTORE)
     }
     emit.store(Opcodes.ASTORE, locals.scratchValues)
 
-    if (locals.holdsObjects) {
-        emit.int(frame.frameSlots)
+    if (liveObjects.isNotEmpty()) {
+        emit.int(liveObjects.size)
         emit.newObjectArray()
-        for (slot in 0 until frame.frameSlots) {
-            if (!locals.holdsObject(slot)) continue
+        liveObjects.forEachIndexed { index, slot ->
             emit.insn(Opcodes.DUP)
-            emit.int(slot)
+            emit.int(index)
             emit.load(Opcodes.ALOAD, locals.objectSlot(slot))
             emit.insn(Opcodes.AASTORE)
         }
@@ -127,6 +149,65 @@ private fun LowerContext.emitSaveFrameAndReturn(
     returnNothing()
 }
 
+private fun LowerContext.emitChunkSaveFrameAndReturn(
+    siteId: Int,
+    hasCallee: Boolean,
+    liveNumbers: IntArray,
+    liveObjects: IntArray,
+) {
+    if (!locals.isRecording) {
+        if (liveNumbers.isNotEmpty()) {
+            pushContext()
+            emit.invokeStatic(FRAME)
+            emit.store(Opcodes.ASTORE, locals.scratchValues)
+            for (slot in liveNumbers) {
+                emit.load(Opcodes.ALOAD, locals.scratchValues)
+                emit.load(Opcodes.ILOAD, locals.frameBase)
+                emit.int(slot)
+                emit.insn(Opcodes.IADD)
+                val local = locals.slot(slot)
+                when (locals.kind(slot)) {
+                    SlotKinds.INT -> {
+                        emit.load(Opcodes.ILOAD, local)
+                        emit.insn(Opcodes.I2L)
+                    }
+                    SlotKinds.FLOAT -> {
+                        emit.load(Opcodes.FLOAD, local)
+                        emit.invokeStatic(FLOAT_TO_RAW_INT_BITS)
+                        emit.insn(Opcodes.I2L)
+                    }
+                    SlotKinds.DOUBLE -> {
+                        emit.load(Opcodes.DLOAD, local)
+                        emit.invokeStatic(DOUBLE_TO_RAW_LONG_BITS)
+                    }
+                    else -> emit.load(Opcodes.LLOAD, local)
+                }
+                emit.insn(Opcodes.LASTORE)
+            }
+        }
+        for (slot in liveObjects) {
+            emit.load(Opcodes.ALOAD, locals.objectFrame)
+            emit.int(slot)
+            emit.load(Opcodes.ALOAD, locals.objectSlot(slot))
+            emit.insn(Opcodes.AASTORE)
+        }
+    }
+
+    pushContext()
+    emit.int(siteId)
+    emit.int(0)
+    emit.newLongArray()
+    emit.insn(Opcodes.ACONST_NULL)
+    if (hasCallee) {
+        emit.load(Opcodes.ALOAD, locals.suspendCallee)
+    } else {
+        emit.insn(Opcodes.ACONST_NULL)
+    }
+    emit.invokeStatic(PUSH_SUSPENDED_FRAME)
+    emit.int(Chunk.SUSPEND)
+    emit.insn(Opcodes.IRETURN)
+}
+
 internal fun LowerContext.lowerSuspensionDispatch() {
     val dispatch = resumeDispatchLabel ?: return
     emit.place(dispatch)
@@ -135,6 +216,14 @@ internal fun LowerContext.lowerSuspensionDispatch() {
         return
     }
 
+    if (chunk == null) {
+        lowerWholeSuspensionDispatch()
+    } else {
+        lowerChunkSuspensionDispatch()
+    }
+}
+
+private fun LowerContext.lowerWholeSuspensionDispatch() {
     pushContext()
     emit.invokeStatic(POP_SUSPENDED_FRAME)
     emit.insn(Opcodes.DUP)
@@ -156,15 +245,32 @@ internal fun LowerContext.lowerSuspensionDispatch() {
         emit.insn(Opcodes.POP)
     }
 
-    for (slot in 0 until frame.frameSlots) {
-        if (locals.holdsNumber(slot)) {
-            restoreNumberSlot(slot)
-        }
-        if (locals.holdsObject(slot)) {
-            emit.load(Opcodes.ALOAD, locals.scratchReferences)
-            emit.int(slot)
-            emit.insn(Opcodes.AALOAD)
-            emit.store(Opcodes.ASTORE, locals.objectSlot(slot))
+    refreshMemory()
+
+    val unknown = emit.label()
+    emit.load(Opcodes.ILOAD, locals.exitPosition)
+    emit.tableSwitch(0, unknown, Array(suspendSites.size) { index -> suspendSites[index].resumeLabel })
+    emit.place(unknown)
+    trap(UNREACHABLE)
+
+    suspendSites.forEach { site -> site.emitResume() }
+}
+
+private fun LowerContext.lowerChunkSuspensionDispatch() {
+    pushContext()
+    emit.invokeStatic(POP_SUSPENDED_FRAME)
+    emit.insn(Opcodes.DUP)
+    emit.getField(SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_SITE_FIELD, "I")
+    emit.store(Opcodes.ISTORE, locals.exitPosition)
+
+    emit.getField(SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_CALLEE_FIELD, OBJECT_TYPE)
+    emit.store(Opcodes.ASTORE, locals.suspendCallee)
+
+    if (!locals.isRecording) {
+        if (suspendSites.any { site -> site.liveNumbers.isNotEmpty() }) {
+            pushContext()
+            emit.invokeStatic(FRAME)
+            emit.store(Opcodes.ASTORE, locals.frameArray)
         }
     }
 
@@ -179,10 +285,46 @@ internal fun LowerContext.lowerSuspensionDispatch() {
     suspendSites.forEach { site -> site.emitResume() }
 }
 
-private fun LowerContext.restoreNumberSlot(slot: Int) {
-    emit.load(Opcodes.ALOAD, locals.scratchValues)
-    emit.int(slot)
-    emit.insn(Opcodes.LALOAD)
+private fun LowerContext.restoreWholeSiteSlots(
+    liveNumbers: IntArray,
+    liveObjects: IntArray,
+) {
+    liveNumbers.forEachIndexed { index, slot ->
+        emit.load(Opcodes.ALOAD, locals.scratchValues)
+        emit.int(index)
+        emit.insn(Opcodes.LALOAD)
+        storeRestoredNumber(slot)
+    }
+    liveObjects.forEachIndexed { index, slot ->
+        emit.load(Opcodes.ALOAD, locals.scratchReferences)
+        emit.int(index)
+        emit.insn(Opcodes.AALOAD)
+        emit.store(Opcodes.ASTORE, locals.objectSlot(slot))
+    }
+}
+
+private fun LowerContext.restoreChunkSiteSlots(
+    liveNumbers: IntArray,
+    liveObjects: IntArray,
+) {
+    if (locals.isRecording) return
+    for (slot in liveNumbers) {
+        emit.load(Opcodes.ALOAD, locals.frameArray)
+        emit.load(Opcodes.ILOAD, locals.frameBase)
+        emit.int(slot)
+        emit.insn(Opcodes.IADD)
+        emit.insn(Opcodes.LALOAD)
+        storeRestoredNumber(slot)
+    }
+    for (slot in liveObjects) {
+        emit.load(Opcodes.ALOAD, locals.objectFrame)
+        emit.int(slot)
+        emit.insn(Opcodes.AALOAD)
+        emit.store(Opcodes.ASTORE, locals.objectSlot(slot))
+    }
+}
+
+private fun LowerContext.storeRestoredNumber(slot: Int) {
     val local = locals.slot(slot)
     when (locals.kind(slot)) {
         SlotKinds.INT -> {

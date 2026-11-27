@@ -12,8 +12,15 @@ import io.github.charlietap.chasm.compiler.backend.abi.LONG_BITS_TO_DOUBLE
 import io.github.charlietap.chasm.compiler.backend.abi.MethodRef
 import io.github.charlietap.chasm.compiler.backend.abi.OBJECT_TYPE
 import io.github.charlietap.chasm.compiler.backend.abi.OPEN_FRAME
+import io.github.charlietap.chasm.compiler.backend.abi.POP_SUSPENDED_FRAME
+import io.github.charlietap.chasm.compiler.backend.abi.PUSH_SUSPENDED_FRAME
 import io.github.charlietap.chasm.compiler.backend.abi.RESULT_REFERENCES
+import io.github.charlietap.chasm.compiler.backend.abi.RESUMING_FIELD
 import io.github.charlietap.chasm.compiler.backend.abi.Resource
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_OBJECTS_FIELD
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_SITE_FIELD
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_TYPE
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_WORDS_FIELD
 import io.github.charlietap.chasm.compiler.backend.abi.UNREACHABLE
 import io.github.charlietap.chasm.runtime.compiled.CHUNK_METHOD_SEPARATOR
 import io.github.charlietap.chasm.type.ValueType
@@ -42,6 +49,16 @@ internal fun LowerContext.lowerDispatcher(
     emit.store(Opcodes.ASTORE, locals.frameArray)
 
     chargeStackBudget(frameCost)
+
+    val resumeDispatch = if (isSuspendable) {
+        val label = emit.label()
+        pushContext()
+        emit.getField(CONTEXT_TYPE, RESUMING_FIELD, "Z")
+        emit.jump(Opcodes.IFNE, label)
+        label
+    } else {
+        null
+    }
 
     pushContext()
     emit.int(frame.frameSlots)
@@ -134,6 +151,10 @@ internal fun LowerContext.lowerDispatcher(
 
     chunks.forEachIndexed { index, chunk ->
         emit.place(calls[index])
+        if (isSuspendable) {
+            emit.int(index)
+            emit.store(Opcodes.ISTORE, locals.scratchInt)
+        }
         emit.load(Opcodes.ALOAD, Locals.BINDING)
         pushContext()
         emit.load(Opcodes.ILOAD, Locals.DEPTH)
@@ -148,12 +169,18 @@ internal fun LowerContext.lowerDispatcher(
     emit.place(negative)
     val returns = emit.label()
     val nothing = emit.label()
+    val suspended = if (isSuspendable) emit.label() else null
     emit.load(Opcodes.ILOAD, continuation)
     emit.int(Chunk.RETURN)
     emit.jump(Opcodes.IF_ICMPEQ, returns)
     emit.load(Opcodes.ILOAD, continuation)
     emit.int(Chunk.LEAVE_WITHOUT_RESULT)
     emit.jump(Opcodes.IF_ICMPEQ, nothing)
+    if (suspended != null) {
+        emit.load(Opcodes.ILOAD, continuation)
+        emit.int(Chunk.SUSPEND)
+        emit.jump(Opcodes.IF_ICMPEQ, suspended)
+    }
     if (dynamic.isNotEmpty()) {
         val table = LongArray(dynamic.keys.max() + 1) { -1L }
         dynamic.forEach { (position, id) -> table[position] = id.toLong() }
@@ -175,6 +202,70 @@ internal fun LowerContext.lowerDispatcher(
     emit.place(nothing)
     closeFrame()
     returnNothing()
+
+    if (suspended != null && resumeDispatch != null) {
+        emit.place(suspended)
+        emit.int(frame.frameSlots)
+        emit.newLongArray()
+        emit.store(Opcodes.ASTORE, locals.scratchValues)
+        if (frame.frameSlots > 0) {
+            pushContext()
+            emit.invokeStatic(FRAME)
+            emit.load(Opcodes.ILOAD, locals.frameBase)
+            emit.load(Opcodes.ALOAD, locals.scratchValues)
+            emit.int(0)
+            emit.int(frame.frameSlots)
+            emit.invokeStatic(ARRAYCOPY)
+        }
+        closeFrame()
+        pushContext()
+        emit.load(Opcodes.ILOAD, locals.scratchInt)
+        emit.load(Opcodes.ALOAD, locals.scratchValues)
+        if (locals.holdsObjects) {
+            emit.load(Opcodes.ALOAD, locals.objectFrame)
+        } else {
+            emit.insn(Opcodes.ACONST_NULL)
+        }
+        emit.insn(Opcodes.ACONST_NULL)
+        emit.invokeStatic(PUSH_SUSPENDED_FRAME)
+        returnNothing()
+
+        emit.place(resumeDispatch)
+        pushContext()
+        emit.invokeStatic(POP_SUSPENDED_FRAME)
+        emit.insn(Opcodes.DUP)
+        emit.getField(SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_SITE_FIELD, "I")
+        emit.store(Opcodes.ISTORE, locals.scratchInt)
+        emit.insn(Opcodes.DUP)
+        emit.getField(SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_WORDS_FIELD, "[J")
+        emit.store(Opcodes.ASTORE, locals.scratchValues)
+        if (locals.holdsObjects) {
+            emit.getField(SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_OBJECTS_FIELD, "[Ljava/lang/Object;")
+            emit.store(Opcodes.ASTORE, locals.objectFrame)
+        } else {
+            emit.insn(Opcodes.POP)
+        }
+        pushContext()
+        emit.int(frame.frameSlots)
+        emit.invokeStatic(OPEN_FRAME)
+        emit.insn(Opcodes.DUP2)
+        emit.store(Opcodes.LSTORE, locals.frameSaved)
+        emit.insn(Opcodes.L2I)
+        emit.store(Opcodes.ISTORE, locals.frameBase)
+        if (frame.frameSlots > 0) {
+            emit.load(Opcodes.ALOAD, locals.scratchValues)
+            emit.int(0)
+            pushContext()
+            emit.invokeStatic(FRAME)
+            emit.load(Opcodes.ILOAD, locals.frameBase)
+            emit.int(frame.frameSlots)
+            emit.invokeStatic(ARRAYCOPY)
+        }
+        emit.int(0)
+        emit.store(Opcodes.ISTORE, continuation)
+        emit.load(Opcodes.ILOAD, locals.scratchInt)
+        emit.tableSwitch(0, unknown, calls.toTypedArray())
+    }
 }
 
 private fun LowerContext.returnFromFrame() {

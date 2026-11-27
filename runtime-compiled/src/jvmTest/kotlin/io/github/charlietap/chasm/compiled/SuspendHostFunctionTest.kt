@@ -422,11 +422,190 @@ class SuspendHostFunctionTest {
         assertIs<ExecutionError.Unlinkable>(assertIs<ChasmResult.Error<*>>(mixResult).error)
     }
 
-    private fun suspendOptions(entryClass: String): JvmOptions {
+    @Test
+    fun `chunked suspendable functions preserve state across multi-frame, loop, mixed types, exceptions, and cancellation`() = runBlocking<Unit> {
+        // 1. Multi-frame chunked call chain
+        val chainGen = generate(buildMultiFrameSuspendModule(), suspendOptions("test.suspend.ChunkedChain", splitInstructions = 3))
+        assertTrue(anyMethodNameContains(chainGen.classes, "\$c"), "expected chunked methods")
+        val chainStore = store(chainGen.compiledModule())
+        val fetchFn = suspendFunction(chainStore, i32ToI32()) { params, results ->
+            val x = params.readI32(0)
+            yield()
+            results.writeI32(0, x + 100)
+        }
+        val chainInst = instance(chainStore, chainGen.compiledModule(), listOf(Import("env", "await_val", fetchFn))).expect("instantiates")
+        assertEquals(listOf(I32(154)), invokeSuspending(chainInst, "outer", listOf(I32(5))).expect("chunked chain"))
+
+        // 2. Chunked loop with multiple suspensions + linear memory
+        val loopGen = generate(buildLoopSuspendModule(), suspendOptions("test.suspend.ChunkedLoop", splitInstructions = 3))
+        assertTrue(anyMethodNameContains(loopGen.classes, "\$c"), "expected chunked loop methods")
+        val loopStore = store(loopGen.compiledModule())
+        val sqFn = suspendFunction(loopStore, i32ToI32()) { params, results ->
+            val i = params.readI32(0)
+            yield()
+            results.writeI32(0, i * i)
+        }
+        val loopInst = instance(loopStore, loopGen.compiledModule(), listOf(Import("env", "square_async", sqFn))).expect("instantiates")
+        assertEquals(listOf(I32(30)), invokeSuspending(loopInst, "sum_squares", listOf(I32(5))).expect("chunked loop"))
+        val mem = exports(loopInst).memory("mem")!!
+        for (i in 0 until 5) {
+            assertEquals(i * i, readInt(mem, i * 4))
+        }
+
+        // 3. Chunked mixed types + externref + multi-value
+        val mixedGen = generate(buildMixedTypesSuspendModule(), suspendOptions("test.suspend.ChunkedMixed", splitInstructions = 3))
+        assertTrue(anyMethodNameContains(mixedGen.classes, "\$c"), "expected chunked mixed methods")
+        val mixedStore = store(mixedGen.compiledModule())
+        val mixedSig = ResultType(
+            listOf(
+                ValueType.Number(NumberType.I32),
+                ValueType.Number(NumberType.I64),
+                ValueType.Number(NumberType.F32),
+                ValueType.Number(NumberType.F64),
+                ValueType.Reference(ReferenceType.RefNull(AbstractHeapType.Extern)),
+            ),
+        )
+        val mixedHost = suspendFunction(mixedStore, FunctionType(mixedSig, mixedSig)) { params, results ->
+            val i32 = params.readI32(0)
+            val i64 = params.readI64(1)
+            val f32 = params.readF32(2)
+            val f64 = params.readF64(3)
+            val ref = params.readReference(4) as String
+            yield()
+            results.writeI32(0, i32 + 10)
+            results.writeI64(1, i64 + 100L)
+            results.writeF32(2, f32 + 1.5f)
+            results.writeF64(3, f64 + 2.25)
+            results.writeReference(4, "$ref-chunked")
+        }
+        val mixedInst = instance(mixedStore, mixedGen.compiledModule(), listOf(Import("env", "fetch", mixedHost))).expect("instantiates")
+        val mixedRes = invokeSuspending(
+            mixedInst,
+            "run",
+            listOf(I32(7), I64(1000L), F32(2.0f), F64(3.5), ReferenceValue.Extern("hi")),
+        ).expect("chunked mixed")
+        assertEquals(I32(24), mixedRes[0])
+        assertEquals(I64(2100L), mixedRes[1])
+        assertEquals(F32(5.5f), mixedRes[2])
+        assertEquals(F64(9.25), mixedRes[3])
+        assertEquals(ReferenceValue.Extern("hi-chunked"), mixedRes[4])
+
+        // 4. Chunked try_table catching exception raised after suspension + cancellation reusability
+        val tryGen = generate(buildTryTableSuspendModule(), suspendOptions("test.suspend.ChunkedTry", splitInstructions = 3))
+        val tryStore = store(tryGen.compiledModule())
+        val errTag = tag(
+            tryStore,
+            TagType(TagType.Attribute.Exception, 0, FunctionType(ResultType(listOf(ValueType.Number(NumberType.I32))), ResultType(emptyList()))),
+        )
+        val entered = CompletableDeferred<Unit>()
+        var cancelMode = false
+        val failHost = suspendFunction(tryStore, i32ToI32()) { params, results ->
+            val x = params.readI32(0)
+            if (cancelMode) {
+                entered.complete(Unit)
+                awaitCancellation()
+            }
+            yield()
+            if (x < 0) {
+                raise(createException(errTag, longArrayOf((-x * 10).toLong()), arrayOfNulls(1)))
+            }
+            results.writeI32(0, x + 5)
+        }
+        val tryInst = instance(
+            tryStore,
+            tryGen.compiledModule(),
+            listOf(Import("env", "err", errTag), Import("env", "fail_async", failHost)),
+        ).expect("instantiates")
+        assertEquals(listOf(I32(37)), invokeSuspending(tryInst, "caught", listOf(I32(-4))).expect("chunked caught"))
+
+        cancelMode = true
+        val job = launch { invokeSuspending(tryInst, "caught", listOf(I32(1))) }
+        entered.await()
+        job.cancelAndJoin()
+        assertTrue(job.isCancelled)
+
+        cancelMode = false
+        assertEquals(listOf(I32(15)), invokeSuspending(tryInst, "caught", listOf(I32(10))).expect("reusable after chunked cancel"))
+    }
+
+    @Test
+    fun `liveness-pruned spilling only saves slots live across suspend call`() = runBlocking<Unit> {
+        val wasm = buildDeadLocalsBeforeSuspendModule()
+        val generated = generate(wasm, suspendOptions("test.suspend.LivenessPruned"))
+        val module = generated.compiledModule()
+        val store = store(module)
+
+        val hostFn = suspendFunction(store, i32ToI32()) { params, results ->
+            val x = params.readI32(0)
+            yield()
+            results.writeI32(0, x * 2)
+        }
+        val inst = instance(store, module, listOf(Import("env", "h", hostFn))).expect("instantiates")
+        // 10 dead locals summed into local 11 before call, only param 0 + local 11 live across call:
+        // deadSum = 1+2+...+10 = 55, h(7)=14 -> 14 + 55 + 7 = 76
+        assertEquals(listOf(I32(76)), invokeSuspending(inst, "sparse_live", listOf(I32(7))).expect("runs"))
+
+        // Verify the emitted suspend save path allocates a LongArray of size <= 2 (NOT >= 12)
+        val newLongArraySizes = findSuspendLongArraySizes(generated.classes, "f1")
+        assertTrue(newLongArraySizes.isNotEmpty(), "expected pushSuspendedFrame in f1")
+        assertTrue(newLongArraySizes.all { size -> size <= 2 }, "expected <= 2 live numeric slots spilled, got $newLongArraySizes")
+    }
+
+    private fun suspendOptions(
+        entryClass: String,
+        splitInstructions: Int? = null,
+    ): JvmOptions {
         return JvmOptions(
             entryClass = entryClass,
             runtime = RuntimeConfig(suspendable = true),
+            splitInstructions = splitInstructions,
         )
+    }
+
+    private fun anyMethodNameContains(
+        classes: Map<String, ByteArray>,
+        fragment: String,
+    ): Boolean {
+        return classes.values.any { bytes ->
+            val node = ClassNode()
+            ClassReader(bytes).accept(node, 0)
+            node.methods.any { method -> fragment in method.name }
+        }
+    }
+
+    private fun findSuspendLongArraySizes(
+        classes: Map<String, ByteArray>,
+        methodName: String,
+    ): List<Int> {
+        val sizes = mutableListOf<Int>()
+        for (bytes in classes.values) {
+            val node = ClassNode()
+            ClassReader(bytes).accept(node, 0)
+            val method = node.methods.firstOrNull { it.name == methodName } ?: continue
+            val insns = method.instructions.toArray()
+            for (i in insns.indices) {
+                val insn = insns[i]
+                if (insn is org.objectweb.asm.tree.IntInsnNode && insn.opcode == org.objectweb.asm.Opcodes.NEWARRAY && insn.operand == org.objectweb.asm.Opcodes.T_LONG) {
+                    // Check if pushSuspendedFrame appears within the next 40 instructions
+                    val window = insns.slice(i until minOf(insns.size, i + 40))
+                    if (window.any { it is MethodInsnNode && it.name == "pushSuspendedFrame" }) {
+                        val prev = insns.getOrNull(i - 1)
+                        val size = when (prev?.opcode) {
+                            org.objectweb.asm.Opcodes.ICONST_0 -> 0
+                            org.objectweb.asm.Opcodes.ICONST_1 -> 1
+                            org.objectweb.asm.Opcodes.ICONST_2 -> 2
+                            org.objectweb.asm.Opcodes.ICONST_3 -> 3
+                            org.objectweb.asm.Opcodes.ICONST_4 -> 4
+                            org.objectweb.asm.Opcodes.ICONST_5 -> 5
+                            org.objectweb.asm.Opcodes.BIPUSH, org.objectweb.asm.Opcodes.SIPUSH -> (prev as org.objectweb.asm.tree.IntInsnNode).operand
+                            else -> -1
+                        }
+                        if (size >= 0) sizes += size
+                    }
+                }
+            }
+        }
+        return sizes
     }
 
     private fun i32ToI32(): FunctionType {
@@ -1043,6 +1222,52 @@ internal fun buildMemoryGrowDuringSuspendModule(): ByteArray = wasmModule {
             b(0x41, 0x00, 0x41, 42, 0x36, 0x02, 0x00) // i32.store addr=0 val=42 (forces inlineMemory)
             b(0x20, 0, 0x10, 0) // call grow_and_write(offset)
             b(0x28, 0x02, 0x00) // i32.load from newly grown page 2!
+        }
+    }
+}
+
+/**
+ * 10 locals (1..10) used and summed into local 11 BEFORE calling h(param 0),
+ * so only param 0 and local 11 are live across the suspend call.
+ */
+internal fun buildDeadLocalsBeforeSuspendModule(): ByteArray = wasmModule {
+    section(1) {
+        uleb(1)
+        funcType(listOf(I32_T), listOf(I32_T))
+    }
+    section(2) {
+        uleb(1)
+        str("env")
+        str("h")
+        b(0x00)
+        uleb(0)
+    }
+    section(3) {
+        uleb(1)
+        uleb(0)
+    }
+    section(7) {
+        uleb(1)
+        str("sparse_live")
+        b(0x00)
+        uleb(1)
+    }
+    section(10) {
+        uleb(1)
+        body(listOf(11 to I32_T)) {
+            for (i in 1..10) {
+                b(0x41)
+                sleb(i)
+                b(0x21, i) // local[i] = i
+            }
+            b(0x20, 1)
+            for (i in 2..10) {
+                b(0x20, i, 0x6a)
+            }
+            b(0x21, 11) // local[11] = 1+2+...+10 = 55; locals 1..10 are now dead
+            b(0x20, 0, 0x10, 0) // call h(param 0)
+            b(0x20, 11, 0x6a) // + local[11]
+            b(0x20, 0, 0x6a) // + param 0
         }
     }
 }

@@ -10,9 +10,11 @@ import io.github.charlietap.chasm.compiler.backend.abi.takesArgumentArray
 import io.github.charlietap.chasm.compiler.backend.abi.takesReferenceArray
 import io.github.charlietap.chasm.compiler.backend.abi.valueDescriptor
 import io.github.charlietap.chasm.compiler.backend.analysis.FrameFacts
+import io.github.charlietap.chasm.compiler.backend.analysis.InstructionTable
 import io.github.charlietap.chasm.compiler.backend.analysis.ModuleIndexSpaces
 import io.github.charlietap.chasm.compiler.backend.analysis.SlotKindFlow
 import io.github.charlietap.chasm.compiler.backend.analysis.SlotKinds
+import io.github.charlietap.chasm.compiler.backend.analysis.SuspendLiveness
 import io.github.charlietap.chasm.compiler.backend.analysis.innermostRegions
 import io.github.charlietap.chasm.compiler.backend.analysis.isLeaf
 import io.github.charlietap.chasm.compiler.backend.jvm.ModuleLowering
@@ -27,12 +29,21 @@ internal class FunctionFacts(
     val module: ModuleLowering,
     val function: CirFunction,
     val frame: FrameFacts,
+    val table: InstructionTable,
     val slotKindFlow: SlotKindFlow,
     val checkedAccesses: BooleanArray,
 ) {
     val innermostRegion = innermostRegions(function.exceptions?.regions.orEmpty(), function.instructions.size)
 
     val isLeaf = function.isLeaf()
+
+    val suspendLiveness: SuspendLiveness? by lazy(LazyThreadSafetyMode.NONE) {
+        if (module.options.suspendable && module.analysis.maySuspend[function.index.index]) {
+            SuspendLiveness(function, table, frame.frameSlots)
+        } else {
+            null
+        }
+    }
 
     val resources = ArrayList<Resource>()
     private val resourceIds = HashMap<Resource, Int>()
@@ -89,7 +100,7 @@ internal class LowerContext(
     val matcherOrder = ArrayList<Int>()
     var propagationLabel: Label? = null
 
-    val isSuspendable: Boolean get() = module.options.suspendable && module.analysis.maySuspend[function.index.index] && chunk == null
+    val isSuspendable: Boolean get() = module.options.suspendable && module.analysis.maySuspend[function.index.index]
     var resumeDispatchLabel: Label? = null
     val suspendSites = ArrayList<SuspendSite>()
 

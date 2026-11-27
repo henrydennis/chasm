@@ -32,7 +32,9 @@ internal class Registers(
 
     val objectFrame = if (chunk) next++ else UNUSED
 
-    val suspendCallee = if (suspendable) next++ else UNUSED
+    val suspendCallee = if (suspendable && !savesStack) next++ else UNUSED
+
+    val lastChunk = if (suspendable && chunk && savesStack) next++ else UNUSED
 
     val memorySize = if (inlineMemory) next++ else UNUSED
 

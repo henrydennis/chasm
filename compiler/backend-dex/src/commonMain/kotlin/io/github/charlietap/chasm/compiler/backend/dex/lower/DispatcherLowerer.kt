@@ -2,14 +2,22 @@ package io.github.charlietap.chasm.compiler.backend.dex.lower
 
 import io.github.charlietap.chasm.compiler.backend.abi.ARRAYCOPY
 import io.github.charlietap.chasm.compiler.backend.abi.CLOSE_FRAME
+import io.github.charlietap.chasm.compiler.backend.abi.CONTEXT_TYPE
 import io.github.charlietap.chasm.compiler.backend.abi.DOUBLE_TO_RAW_LONG_BITS
 import io.github.charlietap.chasm.compiler.backend.abi.FLOAT_TO_RAW_INT_BITS
 import io.github.charlietap.chasm.compiler.backend.abi.FRAME
 import io.github.charlietap.chasm.compiler.backend.abi.MethodRef
 import io.github.charlietap.chasm.compiler.backend.abi.OBJECT_TYPE
 import io.github.charlietap.chasm.compiler.backend.abi.OPEN_FRAME
+import io.github.charlietap.chasm.compiler.backend.abi.POP_SUSPENDED_FRAME
+import io.github.charlietap.chasm.compiler.backend.abi.PUSH_SUSPENDED_FRAME
 import io.github.charlietap.chasm.compiler.backend.abi.RESULT_REFERENCES
+import io.github.charlietap.chasm.compiler.backend.abi.RESUMING_FIELD
 import io.github.charlietap.chasm.compiler.backend.abi.Resource
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_OBJECTS_FIELD
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_SITE_FIELD
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_TYPE
+import io.github.charlietap.chasm.compiler.backend.abi.SUSPENDED_FRAME_WORDS_FIELD
 import io.github.charlietap.chasm.compiler.backend.abi.UNREACHABLE
 import io.github.charlietap.chasm.compiler.backend.abi.takesReferenceArray
 import io.github.charlietap.chasm.type.ValueType
@@ -32,6 +40,14 @@ internal fun LowerContext.lowerDispatcher(
     emit.move(Registers.DEPTH, registers.depthParameter)
     emit.moveObject(registers.binding, registers.bindingParameter)
     chargeStackBudget(cost)
+    val resumeDispatch = if (isSuspendable) {
+        val label = emit.freshLabel()
+        emit.getField(Registers.I0, Registers.CONTEXT, CONTEXT_TYPE, RESUMING_FIELD, "Z")
+        emit.branchZero(Cond.Ne, Registers.I0, label)
+        label
+    } else {
+        null
+    }
     emit.const(Registers.I0, frameSlots)
     emit.invoke(OPEN_FRAME, Registers.CONTEXT, Registers.I0)
     emit.moveResultWide(Registers.W0)
@@ -67,6 +83,10 @@ internal fun LowerContext.lowerDispatcher(
     val window = registers.window
     chunks.forEachIndexed { index, chunk ->
         emit.place(calls[index])
+        if (isSuspendable) {
+            emit.const(Registers.I0, index)
+            emit.move(registers.lastChunk, Registers.I0)
+        }
         emit.moveObject(window, registers.binding)
         emit.moveObject(window + 1, Registers.CONTEXT)
         emit.move(window + 2, Registers.DEPTH)
@@ -78,12 +98,68 @@ internal fun LowerContext.lowerDispatcher(
         emit.gotoLabel(loop)
     }
     emit.place(negative)
+    val suspended = if (isSuspendable) emit.freshLabel() else null
+    if (suspended != null) {
+        emit.const(Registers.I0, Chunk.SUSPEND)
+        emit.branchCompare(Cond.Eq, Registers.NARROW, Registers.I0, suspended)
+    }
     emit.const(Registers.I0, Chunk.RETURN)
     emit.branchCompare(Cond.Ne, Registers.NARROW, Registers.I0, leave)
     returnFromFrame()
     emit.place(leave)
     closeDispatcherFrame()
     returnAnything()
+
+    if (suspended != null && resumeDispatch != null) {
+        emit.place(suspended)
+        emit.const(Registers.I0, frameSlots)
+        emit.newArray(Registers.W2, Registers.I0, "[J")
+        if (frameSlots > 0) {
+            emit.invoke(FRAME, Registers.CONTEXT)
+            emit.moveResultObject(Registers.OBJECT)
+            frameIndex(Registers.I2, 0)
+            emit.const(Registers.I0, 0)
+            emit.const(Registers.I3, frameSlots)
+            emit.invoke(ARRAYCOPY, Registers.OBJECT, Registers.I2, Registers.W2, Registers.I0, Registers.I3)
+        }
+        closeDispatcherFrame()
+        emit.move(Registers.I0, registers.lastChunk)
+        emit.moveObject(Registers.THIRD_OBJECT, registers.objectFrame)
+        emit.const(Registers.OBJECT, 0)
+        emit.invoke(PUSH_SUSPENDED_FRAME, Registers.CONTEXT, Registers.I0, Registers.W2, Registers.THIRD_OBJECT, Registers.OBJECT)
+        returnAnything()
+
+        emit.place(resumeDispatch)
+        emit.invoke(POP_SUSPENDED_FRAME, Registers.CONTEXT)
+        emit.moveResultObject(Registers.OBJECT)
+        emit.getField(Registers.I0, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_SITE_FIELD, "I")
+        emit.move(registers.lastChunk, Registers.I0)
+        emit.getField(Registers.SECOND_OBJECT, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_OBJECTS_FIELD, OBJECT_FRAME_TYPE)
+        emit.moveObject(registers.objectFrame, Registers.SECOND_OBJECT)
+        emit.getField(Registers.THIRD_OBJECT, Registers.OBJECT, SUSPENDED_FRAME_TYPE, SUSPENDED_FRAME_WORDS_FIELD, "[J")
+        emit.moveObject(window, Registers.THIRD_OBJECT)
+
+        emit.const(Registers.I0, frameSlots)
+        emit.invoke(OPEN_FRAME, Registers.CONTEXT, Registers.I0)
+        emit.moveResultWide(Registers.W0)
+        emit.moveWide(registers.savedStack, Registers.W0)
+        emit.convert(Conversion.LongToInt, Registers.I0, Registers.W0)
+        emit.move(registers.frameBase, Registers.I0)
+        if (frameSlots > 0) {
+            emit.invoke(FRAME, Registers.CONTEXT)
+            emit.moveResultObject(Registers.OBJECT)
+            emit.moveObject(Registers.W1, window)
+            emit.const(Registers.I0, 0)
+            frameIndex(Registers.I2, 0)
+            emit.const(Registers.I3, frameSlots)
+            emit.invoke(ARRAYCOPY, Registers.W1, Registers.I0, Registers.OBJECT, Registers.I2, Registers.I3)
+        }
+        loadLongs(Registers.OBJECT, table)
+        emit.const(Registers.I3, 0)
+        emit.move(Registers.I1, registers.lastChunk)
+        emit.packedSwitch(Registers.I1, 0, chunks.indices.map { index -> calls[index] })
+        trap(UNREACHABLE)
+    }
 }
 
 private fun LowerContext.storeParameters() {
