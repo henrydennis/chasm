@@ -22,6 +22,13 @@ internal const val RETURN_CALL_REF: UByte = 0x15u
 internal const val TRY_TABLE: UByte = 0x1Fu
 internal const val BR_ON_NULL: UByte = 0xD5u
 internal const val BR_ON_NON_NULL: UByte = 0xD6u
+internal const val CONT_NEW: UByte = 0xE0u
+internal const val CONT_BIND: UByte = 0xE1u
+internal const val SUSPEND: UByte = 0xE2u
+internal const val RESUME: UByte = 0xE3u
+internal const val RESUME_THROW: UByte = 0xE4u
+internal const val RESUME_THROW_REF: UByte = 0xE5u
+internal const val SWITCH: UByte = 0xE6u
 
 internal const val I32_CONST: UByte = 0x41u
 internal const val I64_CONST: UByte = 0x42u

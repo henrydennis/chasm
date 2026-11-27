@@ -4176,6 +4176,33 @@ public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$ContBind : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
+	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-Q7G2E2s ()I
+	public final fun component2-Q7G2E2s ()I
+	public final fun copy-uH-pTYo (II)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ContBind;
+	public static synthetic fun copy-uH-pTYo$default (Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ContBind;IIILjava/lang/Object;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ContBind;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInputTypeIndex-Q7G2E2s ()I
+	public final fun getOutputTypeIndex-Q7G2E2s ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$ContNew : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
+	public static final synthetic fun box-impl (I)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ContNew;
+	public static fun constructor-impl (I)I
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (ILjava/lang/Object;)Z
+	public static final fun equals-impl0 (II)Z
+	public final fun getTypeIndex-Q7G2E2s ()I
+	public fun hashCode ()I
+	public static fun hashCode-impl (I)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (I)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()I
+}
+
 public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$Else : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
 	public static final field INSTANCE Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Else;
 	public fun equals (Ljava/lang/Object;)Z
@@ -4232,6 +4259,78 @@ public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class io/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause {
+	public abstract fun getTagIndex-w3r3QrU ()I
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause$OnLabel : io/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause {
+	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-w3r3QrU ()I
+	public final fun component2-z12v29U ()I
+	public final fun copy-RwKosNM (II)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause$OnLabel;
+	public static synthetic fun copy-RwKosNM$default (Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause$OnLabel;IIILjava/lang/Object;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause$OnLabel;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLabelIndex-z12v29U ()I
+	public fun getTagIndex-w3r3QrU ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause$OnSwitch : io/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause {
+	public static final synthetic fun box-impl (I)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$OnClause$OnSwitch;
+	public static fun constructor-impl (I)I
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (ILjava/lang/Object;)Z
+	public static final fun equals-impl0 (II)Z
+	public fun getTagIndex-w3r3QrU ()I
+	public fun hashCode ()I
+	public static fun hashCode-impl (I)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (I)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()I
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$Resume : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
+	public synthetic fun <init> (ILjava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-Q7G2E2s ()I
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy-6fQj7sQ (ILjava/util/List;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Resume;
+	public static synthetic fun copy-6fQj7sQ$default (Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Resume;ILjava/util/List;ILjava/lang/Object;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Resume;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHandlers ()Ljava/util/List;
+	public final fun getTypeIndex-Q7G2E2s ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrow : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
+	public synthetic fun <init> (IILjava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-Q7G2E2s ()I
+	public final fun component2-w3r3QrU ()I
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy-cwwCKO8 (IILjava/util/List;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrow;
+	public static synthetic fun copy-cwwCKO8$default (Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrow;IILjava/util/List;ILjava/lang/Object;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrow;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHandlers ()Ljava/util/List;
+	public final fun getTagIndex-w3r3QrU ()I
+	public final fun getTypeIndex-Q7G2E2s ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrowRef : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
+	public synthetic fun <init> (ILjava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-Q7G2E2s ()I
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy-6fQj7sQ (ILjava/util/List;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrowRef;
+	public static synthetic fun copy-6fQj7sQ$default (Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrowRef;ILjava/util/List;ILjava/lang/Object;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$ResumeThrowRef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHandlers ()Ljava/util/List;
+	public final fun getTypeIndex-Q7G2E2s ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$Return : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
 	public static final field INSTANCE Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Return;
 	public fun equals (Ljava/lang/Object;)Z
@@ -4278,6 +4377,33 @@ public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction
 	public fun toString ()Ljava/lang/String;
 	public static fun toString-impl (I)Ljava/lang/String;
 	public final synthetic fun unbox-impl ()I
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$Suspend : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
+	public static final synthetic fun box-impl (I)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Suspend;
+	public static fun constructor-impl (I)I
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (ILjava/lang/Object;)Z
+	public static final fun equals-impl0 (II)Z
+	public final fun getTagIndex-w3r3QrU ()I
+	public fun hashCode ()I
+	public static fun hashCode-impl (I)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (I)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()I
+}
+
+public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$Switch : io/github/charlietap/chasm/ast/instruction/ControlInstruction {
+	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-Q7G2E2s ()I
+	public final fun component2-w3r3QrU ()I
+	public final fun copy-JdUktrs (II)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Switch;
+	public static synthetic fun copy-JdUktrs$default (Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Switch;IIILjava/lang/Object;)Lio/github/charlietap/chasm/ast/instruction/ControlInstruction$Switch;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getTagIndex-w3r3QrU ()I
+	public final fun getTypeIndex-Q7G2E2s ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/charlietap/chasm/ast/instruction/ControlInstruction$Throw : io/github/charlietap/chasm/ast/instruction/ControlInstruction {

@@ -3,6 +3,7 @@ package io.github.charlietap.chasm.decoder.decoder.type.composite
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
+import io.github.charlietap.chasm.config.Proposal
 import io.github.charlietap.chasm.decoder.context.ModuleDecoderContext
 import io.github.charlietap.chasm.decoder.decoder.Decoder
 import io.github.charlietap.chasm.decoder.decoder.type.aggregate.ArrayTypeDecoder
@@ -12,6 +13,7 @@ import io.github.charlietap.chasm.decoder.error.TypeDecodeError
 import io.github.charlietap.chasm.decoder.error.WasmDecodeError
 import io.github.charlietap.chasm.type.ArrayType
 import io.github.charlietap.chasm.type.CompositeType
+import io.github.charlietap.chasm.type.ConcreteHeapType
 import io.github.charlietap.chasm.type.FunctionType
 import io.github.charlietap.chasm.type.StructType
 
@@ -32,6 +34,16 @@ internal inline fun CompositeTypeDecoder(
     crossinline arrayTypeDecoder: Decoder<ArrayType>,
 ): Result<CompositeType, WasmDecodeError> = binding {
     when (val compositeTypeByte = context.reader.ubyte()) {
+        CONT_COMPOSITE_TYPE -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(TypeDecodeError.InvalidCompositeType(compositeTypeByte)).bind<CompositeType>()
+            }
+            val typeIndex = context.reader.s33()
+            if (typeIndex < 0) {
+                Err(TypeDecodeError.InvalidCompositeType(compositeTypeByte)).bind<CompositeType>()
+            }
+            CompositeType.Cont(ConcreteHeapType.TypeIndex(typeIndex.toInt()))
+        }
         ARRAY_COMPOSITE_TYPE -> CompositeType.Array(arrayTypeDecoder(context).bind())
         STRUCT_COMPOSITE_TYPE -> CompositeType.Struct(structTypeDecoder(context).bind())
         FUNCTION_COMPOSITE_TYPE -> CompositeType.Function(functionTypeDecoder(context).bind())
@@ -39,6 +51,7 @@ internal inline fun CompositeTypeDecoder(
     }
 }
 
+internal const val CONT_COMPOSITE_TYPE: UByte = 0x5Du
 internal const val ARRAY_COMPOSITE_TYPE: UByte = 0x5Eu
 internal const val STRUCT_COMPOSITE_TYPE: UByte = 0x5Fu
 internal const val FUNCTION_COMPOSITE_TYPE: UByte = 0x60u

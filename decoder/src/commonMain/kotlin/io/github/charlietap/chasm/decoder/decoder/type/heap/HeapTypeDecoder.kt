@@ -36,4 +36,4 @@ internal inline fun HeapTypeDecoder(
     }
 }
 
-internal val ABSTRACT_HEAP_TYPE_RANGE = HEAP_TYPE_EXCEPTION..HEAP_TYPE_NO_EXCEPTION
+internal val ABSTRACT_HEAP_TYPE_RANGE = HEAP_TYPE_CONT..HEAP_TYPE_NO_CONT

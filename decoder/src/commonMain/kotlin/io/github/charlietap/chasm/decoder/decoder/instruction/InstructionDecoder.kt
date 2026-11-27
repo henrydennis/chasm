@@ -85,6 +85,7 @@ internal val CONTROL_OPCODES: Set<UIntRange> by lazy {
         BR..RETURN_CALL_REF,
         TRY_TABLE..TRY_TABLE,
         BR_ON_NULL..BR_ON_NON_NULL,
+        CONT_NEW..SWITCH,
     )
 }
 

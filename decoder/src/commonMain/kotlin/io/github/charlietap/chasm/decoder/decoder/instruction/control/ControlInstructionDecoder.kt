@@ -6,6 +6,7 @@ import com.github.michaelbull.result.binding
 import io.github.charlietap.chasm.ast.instruction.ControlInstruction
 import io.github.charlietap.chasm.ast.module.Index
 import io.github.charlietap.chasm.ast.module.Index.TagIndex
+import io.github.charlietap.chasm.config.Proposal
 import io.github.charlietap.chasm.decoder.context.CodeBodyDecoderContext
 import io.github.charlietap.chasm.decoder.decoder.CodeBodyDecoder
 import io.github.charlietap.chasm.decoder.decoder.instruction.BLOCK
@@ -17,13 +18,20 @@ import io.github.charlietap.chasm.decoder.decoder.instruction.BR_TABLE
 import io.github.charlietap.chasm.decoder.decoder.instruction.CALL
 import io.github.charlietap.chasm.decoder.decoder.instruction.CALL_INDIRECT
 import io.github.charlietap.chasm.decoder.decoder.instruction.CALL_REF
+import io.github.charlietap.chasm.decoder.decoder.instruction.CONT_BIND
+import io.github.charlietap.chasm.decoder.decoder.instruction.CONT_NEW
 import io.github.charlietap.chasm.decoder.decoder.instruction.IF
 import io.github.charlietap.chasm.decoder.decoder.instruction.LOOP
 import io.github.charlietap.chasm.decoder.decoder.instruction.NOP
+import io.github.charlietap.chasm.decoder.decoder.instruction.RESUME
+import io.github.charlietap.chasm.decoder.decoder.instruction.RESUME_THROW
+import io.github.charlietap.chasm.decoder.decoder.instruction.RESUME_THROW_REF
 import io.github.charlietap.chasm.decoder.decoder.instruction.RETURN
 import io.github.charlietap.chasm.decoder.decoder.instruction.RETURN_CALL
 import io.github.charlietap.chasm.decoder.decoder.instruction.RETURN_CALL_INDIRECT
 import io.github.charlietap.chasm.decoder.decoder.instruction.RETURN_CALL_REF
+import io.github.charlietap.chasm.decoder.decoder.instruction.SUSPEND
+import io.github.charlietap.chasm.decoder.decoder.instruction.SWITCH
 import io.github.charlietap.chasm.decoder.decoder.instruction.THROW
 import io.github.charlietap.chasm.decoder.decoder.instruction.THROW_REF
 import io.github.charlietap.chasm.decoder.decoder.instruction.TRY_TABLE
@@ -138,6 +146,61 @@ internal inline fun ControlInstructionDecoder(
         BR_ON_NON_NULL -> {
             val labelIndex = labelIndexDecoder(context).bind()
             ControlInstruction.BrOnNonNull(labelIndex)
+        }
+        CONT_NEW -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()
+            }
+            val typeIndex = typeIndexDecoder(context).bind()
+            ControlInstruction.ContNew(typeIndex)
+        }
+        CONT_BIND -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()
+            }
+            val inputTypeIndex = typeIndexDecoder(context).bind()
+            val outputTypeIndex = typeIndexDecoder(context).bind()
+            ControlInstruction.ContBind(inputTypeIndex, outputTypeIndex)
+        }
+        SUSPEND -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()
+            }
+            val tagIndex = tagIndexDecoder(context).bind()
+            ControlInstruction.Suspend(tagIndex)
+        }
+        RESUME -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()
+            }
+            val typeIndex = typeIndexDecoder(context).bind()
+            val handlers = CodeBodyVectorDecoder(context, ::OnClauseDecoder).bind()
+            ControlInstruction.Resume(typeIndex, handlers.vector)
+        }
+        RESUME_THROW -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()
+            }
+            val typeIndex = typeIndexDecoder(context).bind()
+            val tagIndex = tagIndexDecoder(context).bind()
+            val handlers = CodeBodyVectorDecoder(context, ::OnClauseDecoder).bind()
+            ControlInstruction.ResumeThrow(typeIndex, tagIndex, handlers.vector)
+        }
+        RESUME_THROW_REF -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()
+            }
+            val typeIndex = typeIndexDecoder(context).bind()
+            val handlers = CodeBodyVectorDecoder(context, ::OnClauseDecoder).bind()
+            ControlInstruction.ResumeThrowRef(typeIndex, handlers.vector)
+        }
+        SWITCH -> {
+            if (Proposal.StackSwitching !in context.config.proposals) {
+                Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()
+            }
+            val typeIndex = typeIndexDecoder(context).bind()
+            val tagIndex = tagIndexDecoder(context).bind()
+            ControlInstruction.Switch(typeIndex, tagIndex)
         }
 
         else -> Err(InstructionDecodeError.InvalidControlInstruction(opcode)).bind<ControlInstruction>()

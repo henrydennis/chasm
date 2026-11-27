@@ -101,4 +101,51 @@ sealed interface ControlInstruction : Instruction {
         val typeIndex: Index.TypeIndex,
         val tableIndex: Index.TableIndex,
     ) : ControlInstruction
+
+    sealed interface OnClause {
+
+        val tagIndex: Index.TagIndex
+
+        data class OnLabel(
+            override val tagIndex: Index.TagIndex,
+            val labelIndex: Index.LabelIndex,
+        ) : OnClause
+
+        @JvmInline
+        value class OnSwitch(
+            override val tagIndex: Index.TagIndex,
+        ) : OnClause
+    }
+
+    @JvmInline
+    value class ContNew(val typeIndex: Index.TypeIndex) : ControlInstruction
+
+    data class ContBind(
+        val inputTypeIndex: Index.TypeIndex,
+        val outputTypeIndex: Index.TypeIndex,
+    ) : ControlInstruction
+
+    @JvmInline
+    value class Suspend(val tagIndex: Index.TagIndex) : ControlInstruction
+
+    data class Resume(
+        val typeIndex: Index.TypeIndex,
+        val handlers: List<OnClause>,
+    ) : ControlInstruction
+
+    data class ResumeThrow(
+        val typeIndex: Index.TypeIndex,
+        val tagIndex: Index.TagIndex,
+        val handlers: List<OnClause>,
+    ) : ControlInstruction
+
+    data class ResumeThrowRef(
+        val typeIndex: Index.TypeIndex,
+        val handlers: List<OnClause>,
+    ) : ControlInstruction
+
+    data class Switch(
+        val typeIndex: Index.TypeIndex,
+        val tagIndex: Index.TagIndex,
+    ) : ControlInstruction
 }

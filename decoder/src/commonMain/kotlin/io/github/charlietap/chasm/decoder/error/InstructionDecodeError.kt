@@ -40,6 +40,9 @@ sealed interface InstructionDecodeError : WasmDecodeError {
     @JvmInline
     value class InvalidCatchHandler(val byte: UByte) : InstructionDecodeError
 
+    @JvmInline
+    value class InvalidOnClause(val byte: UByte) : InstructionDecodeError
+
     data class InvalidPrefixInstruction(val prefix: UByte, val opcode: UInt) : InstructionDecodeError
 
     data object ReservedByteNotZero : InstructionDecodeError

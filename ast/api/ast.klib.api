@@ -4540,6 +4540,38 @@ sealed interface io.github.charlietap.chasm.ast.instruction/ControlInstruction :
         }
     }
 
+    sealed interface OnClause { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause|null[0]
+        abstract val tagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.tagIndex|{}tagIndex[0]
+            abstract fun <get-tagIndex>(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.tagIndex.<get-tagIndex>|<get-tagIndex>(){}[0]
+
+        final class OnLabel : io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel|null[0]
+            constructor <init>(io.github.charlietap.chasm.ast.module/Index.TagIndex, io.github.charlietap.chasm.ast.module/Index.LabelIndex) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TagIndex;io.github.charlietap.chasm.ast.module.Index.LabelIndex){}[0]
+
+            final val labelIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.labelIndex|{}labelIndex[0]
+                final fun <get-labelIndex>(): io.github.charlietap.chasm.ast.module/Index.LabelIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.labelIndex.<get-labelIndex>|<get-labelIndex>(){}[0]
+            final val tagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.tagIndex|{}tagIndex[0]
+                final fun <get-tagIndex>(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.tagIndex.<get-tagIndex>|<get-tagIndex>(){}[0]
+
+            final fun component1(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.component1|component1(){}[0]
+            final fun component2(): io.github.charlietap.chasm.ast.module/Index.LabelIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.component2|component2(){}[0]
+            final fun copy(io.github.charlietap.chasm.ast.module/Index.TagIndex = ..., io.github.charlietap.chasm.ast.module/Index.LabelIndex = ...): io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.copy|copy(io.github.charlietap.chasm.ast.module.Index.TagIndex;io.github.charlietap.chasm.ast.module.Index.LabelIndex){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnLabel.toString|toString(){}[0]
+        }
+
+        final value class OnSwitch : io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnSwitch|null[0]
+            constructor <init>(io.github.charlietap.chasm.ast.module/Index.TagIndex) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnSwitch.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TagIndex){}[0]
+
+            final val tagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnSwitch.tagIndex|{}tagIndex[0]
+                final fun <get-tagIndex>(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnSwitch.tagIndex.<get-tagIndex>|<get-tagIndex>(){}[0]
+
+            final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnSwitch.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnSwitch.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause.OnSwitch.toString|toString(){}[0]
+        }
+    }
+
     final class BrOnCast : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.BrOnCast|null[0]
         constructor <init>(io.github.charlietap.chasm.ast.module/Index.LabelIndex, io.github.charlietap.chasm.type/ReferenceType, io.github.charlietap.chasm.type/ReferenceType) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.BrOnCast.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.LabelIndex;io.github.charlietap.chasm.type.ReferenceType;io.github.charlietap.chasm.type.ReferenceType){}[0]
 
@@ -4610,6 +4642,73 @@ sealed interface io.github.charlietap.chasm.ast.instruction/ControlInstruction :
         final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.CallIndirect.toString|toString(){}[0]
     }
 
+    final class ContBind : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind|null[0]
+        constructor <init>(io.github.charlietap.chasm.ast.module/Index.TypeIndex, io.github.charlietap.chasm.ast.module/Index.TypeIndex) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TypeIndex;io.github.charlietap.chasm.ast.module.Index.TypeIndex){}[0]
+
+        final val inputTypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.inputTypeIndex|{}inputTypeIndex[0]
+            final fun <get-inputTypeIndex>(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.inputTypeIndex.<get-inputTypeIndex>|<get-inputTypeIndex>(){}[0]
+        final val outputTypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.outputTypeIndex|{}outputTypeIndex[0]
+            final fun <get-outputTypeIndex>(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.outputTypeIndex.<get-outputTypeIndex>|<get-outputTypeIndex>(){}[0]
+
+        final fun component1(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.component1|component1(){}[0]
+        final fun component2(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.component2|component2(){}[0]
+        final fun copy(io.github.charlietap.chasm.ast.module/Index.TypeIndex = ..., io.github.charlietap.chasm.ast.module/Index.TypeIndex = ...): io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.copy|copy(io.github.charlietap.chasm.ast.module.Index.TypeIndex;io.github.charlietap.chasm.ast.module.Index.TypeIndex){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContBind.toString|toString(){}[0]
+    }
+
+    final class Resume : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume|null[0]
+        constructor <init>(io.github.charlietap.chasm.ast.module/Index.TypeIndex, kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause>) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TypeIndex;kotlin.collections.List<io.github.charlietap.chasm.ast.instruction.ControlInstruction.OnClause>){}[0]
+
+        final val handlers // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.handlers|{}handlers[0]
+            final fun <get-handlers>(): kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.handlers.<get-handlers>|<get-handlers>(){}[0]
+        final val typeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.typeIndex|{}typeIndex[0]
+            final fun <get-typeIndex>(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.typeIndex.<get-typeIndex>|<get-typeIndex>(){}[0]
+
+        final fun component1(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.component1|component1(){}[0]
+        final fun component2(): kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.component2|component2(){}[0]
+        final fun copy(io.github.charlietap.chasm.ast.module/Index.TypeIndex = ..., kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> = ...): io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.copy|copy(io.github.charlietap.chasm.ast.module.Index.TypeIndex;kotlin.collections.List<io.github.charlietap.chasm.ast.instruction.ControlInstruction.OnClause>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Resume.toString|toString(){}[0]
+    }
+
+    final class ResumeThrow : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow|null[0]
+        constructor <init>(io.github.charlietap.chasm.ast.module/Index.TypeIndex, io.github.charlietap.chasm.ast.module/Index.TagIndex, kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause>) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TypeIndex;io.github.charlietap.chasm.ast.module.Index.TagIndex;kotlin.collections.List<io.github.charlietap.chasm.ast.instruction.ControlInstruction.OnClause>){}[0]
+
+        final val handlers // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.handlers|{}handlers[0]
+            final fun <get-handlers>(): kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.handlers.<get-handlers>|<get-handlers>(){}[0]
+        final val tagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.tagIndex|{}tagIndex[0]
+            final fun <get-tagIndex>(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.tagIndex.<get-tagIndex>|<get-tagIndex>(){}[0]
+        final val typeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.typeIndex|{}typeIndex[0]
+            final fun <get-typeIndex>(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.typeIndex.<get-typeIndex>|<get-typeIndex>(){}[0]
+
+        final fun component1(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.component1|component1(){}[0]
+        final fun component2(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.component2|component2(){}[0]
+        final fun component3(): kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.component3|component3(){}[0]
+        final fun copy(io.github.charlietap.chasm.ast.module/Index.TypeIndex = ..., io.github.charlietap.chasm.ast.module/Index.TagIndex = ..., kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> = ...): io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.copy|copy(io.github.charlietap.chasm.ast.module.Index.TypeIndex;io.github.charlietap.chasm.ast.module.Index.TagIndex;kotlin.collections.List<io.github.charlietap.chasm.ast.instruction.ControlInstruction.OnClause>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrow.toString|toString(){}[0]
+    }
+
+    final class ResumeThrowRef : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef|null[0]
+        constructor <init>(io.github.charlietap.chasm.ast.module/Index.TypeIndex, kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause>) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TypeIndex;kotlin.collections.List<io.github.charlietap.chasm.ast.instruction.ControlInstruction.OnClause>){}[0]
+
+        final val handlers // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.handlers|{}handlers[0]
+            final fun <get-handlers>(): kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.handlers.<get-handlers>|<get-handlers>(){}[0]
+        final val typeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.typeIndex|{}typeIndex[0]
+            final fun <get-typeIndex>(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.typeIndex.<get-typeIndex>|<get-typeIndex>(){}[0]
+
+        final fun component1(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.component1|component1(){}[0]
+        final fun component2(): kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.component2|component2(){}[0]
+        final fun copy(io.github.charlietap.chasm.ast.module/Index.TypeIndex = ..., kotlin.collections/List<io.github.charlietap.chasm.ast.instruction/ControlInstruction.OnClause> = ...): io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.copy|copy(io.github.charlietap.chasm.ast.module.Index.TypeIndex;kotlin.collections.List<io.github.charlietap.chasm.ast.instruction.ControlInstruction.OnClause>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ResumeThrowRef.toString|toString(){}[0]
+    }
+
     final class ReturnCallIndirect : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallIndirect|null[0]
         constructor <init>(io.github.charlietap.chasm.ast.module/Index.TypeIndex, io.github.charlietap.chasm.ast.module/Index.TableIndex) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallIndirect.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TypeIndex;io.github.charlietap.chasm.ast.module.Index.TableIndex){}[0]
 
@@ -4624,6 +4723,22 @@ sealed interface io.github.charlietap.chasm.ast.instruction/ControlInstruction :
         final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallIndirect.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallIndirect.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallIndirect.toString|toString(){}[0]
+    }
+
+    final class Switch : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch|null[0]
+        constructor <init>(io.github.charlietap.chasm.ast.module/Index.TypeIndex, io.github.charlietap.chasm.ast.module/Index.TagIndex) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TypeIndex;io.github.charlietap.chasm.ast.module.Index.TagIndex){}[0]
+
+        final val tagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.tagIndex|{}tagIndex[0]
+            final fun <get-tagIndex>(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.tagIndex.<get-tagIndex>|<get-tagIndex>(){}[0]
+        final val typeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.typeIndex|{}typeIndex[0]
+            final fun <get-typeIndex>(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.typeIndex.<get-typeIndex>|<get-typeIndex>(){}[0]
+
+        final fun component1(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.component1|component1(){}[0]
+        final fun component2(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.component2|component2(){}[0]
+        final fun copy(io.github.charlietap.chasm.ast.module/Index.TypeIndex = ..., io.github.charlietap.chasm.ast.module/Index.TagIndex = ...): io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.copy|copy(io.github.charlietap.chasm.ast.module.Index.TypeIndex;io.github.charlietap.chasm.ast.module.Index.TagIndex){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Switch.toString|toString(){}[0]
     }
 
     final class TryTable : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.TryTable|null[0]
@@ -4719,6 +4834,17 @@ sealed interface io.github.charlietap.chasm.ast.instruction/ControlInstruction :
         final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.CallRef.toString|toString(){}[0]
     }
 
+    final value class ContNew : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContNew|null[0]
+        constructor <init>(io.github.charlietap.chasm.ast.module/Index.TypeIndex) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContNew.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TypeIndex){}[0]
+
+        final val typeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContNew.typeIndex|{}typeIndex[0]
+            final fun <get-typeIndex>(): io.github.charlietap.chasm.ast.module/Index.TypeIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContNew.typeIndex.<get-typeIndex>|<get-typeIndex>(){}[0]
+
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContNew.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContNew.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ContNew.toString|toString(){}[0]
+    }
+
     final value class End : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.End|null[0]
         constructor <init>(kotlin/Int) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.End.<init>|<init>(kotlin.Int){}[0]
 
@@ -4772,6 +4898,17 @@ sealed interface io.github.charlietap.chasm.ast.instruction/ControlInstruction :
         final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallRef.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallRef.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.ReturnCallRef.toString|toString(){}[0]
+    }
+
+    final value class Suspend : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Suspend|null[0]
+        constructor <init>(io.github.charlietap.chasm.ast.module/Index.TagIndex) // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Suspend.<init>|<init>(io.github.charlietap.chasm.ast.module.Index.TagIndex){}[0]
+
+        final val tagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Suspend.tagIndex|{}tagIndex[0]
+            final fun <get-tagIndex>(): io.github.charlietap.chasm.ast.module/Index.TagIndex // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Suspend.tagIndex.<get-tagIndex>|<get-tagIndex>(){}[0]
+
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Suspend.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Suspend.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Suspend.toString|toString(){}[0]
     }
 
     final value class Throw : io.github.charlietap.chasm.ast.instruction/ControlInstruction { // io.github.charlietap.chasm.ast.instruction/ControlInstruction.Throw|null[0]
