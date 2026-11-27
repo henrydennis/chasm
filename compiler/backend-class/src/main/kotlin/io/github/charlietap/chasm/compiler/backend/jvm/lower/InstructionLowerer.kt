@@ -65,6 +65,7 @@ internal fun LowerContext.lowerPositions(positions: IntRange) {
 }
 
 internal fun LowerContext.lowerOutOfLine() {
+    lowerSuspensionDispatch()
     outOfLine.forEach { path -> path() }
 }
 

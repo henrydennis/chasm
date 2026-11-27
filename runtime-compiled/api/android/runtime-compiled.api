@@ -14,6 +14,7 @@ public abstract interface class io/github/charlietap/chasm/compiled/CompiledModu
 	public abstract fun stackBytes ()J
 	public abstract fun stacktraces ()Z
 	public abstract fun structLanes ()[J
+	public abstract fun suspendable ()Z
 	public abstract fun tableBytes ()J
 	public abstract fun target ()I
 	public abstract fun trapOnGrowthFailure ()Z
@@ -47,6 +48,13 @@ public abstract interface class io/github/charlietap/chasm/embedding/compiled/Ma
 	public abstract fun unsafeAllocateArray-kC6FYv4 (ILjava/lang/Object;)Lio/github/charlietap/chasm/reference/ArrayReference;
 	public abstract fun unsafeBorrow (Lio/github/charlietap/chasm/reference/ArrayReference;Ljava/lang/Class;)Ljava/lang/Object;
 	public abstract fun unsafeBorrowElements (Lio/github/charlietap/chasm/embedding/shapes/Table;)[Ljava/lang/Object;
+}
+
+public final class io/github/charlietap/chasm/embedding/compiled/ManagedEngine$DefaultImpls {
+	public static fun invokeSuspending (Lio/github/charlietap/chasm/embedding/compiled/ManagedEngine;Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun invokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/compiled/ManagedEngine;Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun suspendFunction (Lio/github/charlietap/chasm/embedding/compiled/ManagedEngine;Lio/github/charlietap/chasm/type/FunctionType;Lio/github/charlietap/chasm/host/SuspendHostFunction;)Lio/github/charlietap/chasm/embedding/shapes/Function;
+	public static fun unsafeInvokeUnboxedSuspending (Lio/github/charlietap/chasm/embedding/compiled/ManagedEngine;Lio/github/charlietap/chasm/embedding/shapes/PreparedFunction;[J[Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/charlietap/chasm/embedding/compiled/ZeroCopyCallsKt {
@@ -356,6 +364,7 @@ public final class io/github/charlietap/chasm/runtime/compiled/gc/ManagedArrays 
 
 public final class io/github/charlietap/chasm/runtime/compiled/gc/ManagedEntryKt {
 	public static final fun enterObjects (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;Lio/github/charlietap/chasm/runtime/instance/FunctionInstance;[J[Ljava/lang/Object;Lio/github/charlietap/chasm/runtime/compiled/gc/PendingExceptions;)Lio/github/charlietap/chasm/runtime/error/InvocationError;
+	public static final fun enterObjectsSuspending (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;Lio/github/charlietap/chasm/runtime/instance/FunctionInstance;[J[Ljava/lang/Object;Lio/github/charlietap/chasm/runtime/compiled/gc/PendingExceptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun getManagedEntryClass ()Lkotlin/reflect/KClass;
 }
 
@@ -405,12 +414,15 @@ public final class io/github/charlietap/chasm/runtime/compiled/gc/ManagedOps {
 	public static final fun functionMatches (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;Ljava/lang/Object;I)Z
 	public static final fun guestHeapExhausted ()Ljava/lang/Void;
 	public static final fun pendingExceptionTag (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;)I
+	public static final fun popSuspendedFrame (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;)Lio/github/charlietap/chasm/runtime/execution/SuspendedFrame;
+	public static final fun pushSuspendedFrame (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;I[J[Ljava/lang/Object;Ljava/lang/Object;)V
 	public static final fun referenceTarget (Ljava/lang/Object;)Ljava/lang/Object;
 	public static final fun refillAllocation (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;I)V
 	public static final fun requestTailIndirectObjects (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;Lio/github/charlietap/chasm/runtime/instance/ModuleInstance;Lio/github/charlietap/chasm/runtime/compiled/gc/ReferenceTable;II[J[Ljava/lang/Object;)V
 	public static final fun requestTailObjects (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;Lio/github/charlietap/chasm/runtime/instance/ModuleInstance;Lio/github/charlietap/chasm/runtime/instance/FunctionInstance;[J[Ljava/lang/Object;)V
 	public static final fun requestTailReferenceObjects (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;Lio/github/charlietap/chasm/runtime/instance/ModuleInstance;Ljava/lang/Object;[J[Ljava/lang/Object;)V
 	public static final fun resultReferences (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;I)[Ljava/lang/Object;
+	public static final fun resumeTailObjects (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;[J[Ljava/lang/Object;I)V
 	public static final fun rethrowException (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;Ljava/lang/Object;)V
 	public static final fun sameI31 (Ljava/lang/Object;Ljava/lang/Object;)Z
 	public static final fun takeException (Lio/github/charlietap/chasm/runtime/execution/ExecutionContext;)Lio/github/charlietap/chasm/runtime/compiled/gc/WasmException;
@@ -464,6 +476,12 @@ public abstract class io/github/charlietap/chasm/runtime/compiled/gc/ObjectLaneH
 	public abstract fun call ([J[Ljava/lang/Object;IILio/github/charlietap/chasm/runtime/host/RawHostModuleInstance;Lio/github/charlietap/chasm/runtime/host/RawHostResources;)V
 	public final fun checkResults (Lio/github/charlietap/chasm/runtime/compiled/gc/ReferenceChecks;[Ljava/lang/Object;)V
 	public fun invoke ([JLio/github/charlietap/chasm/runtime/host/RawHostModuleInstance;Lio/github/charlietap/chasm/runtime/host/RawHostResources;II)V
+}
+
+public abstract class io/github/charlietap/chasm/runtime/compiled/gc/ObjectLaneSuspendHostFunction : io/github/charlietap/chasm/runtime/compiled/gc/ObjectLaneHostFunction {
+	public fun <init> (Lio/github/charlietap/chasm/type/FunctionType;)V
+	public final fun call ([J[Ljava/lang/Object;IILio/github/charlietap/chasm/runtime/host/RawHostModuleInstance;Lio/github/charlietap/chasm/runtime/host/RawHostResources;)V
+	public abstract fun callSuspending ([J[Ljava/lang/Object;IILio/github/charlietap/chasm/runtime/host/RawHostModuleInstance;Lio/github/charlietap/chasm/runtime/host/RawHostResources;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/charlietap/chasm/runtime/compiled/gc/PendingExceptionSlot : io/github/charlietap/chasm/runtime/compiled/gc/PendingExceptions {

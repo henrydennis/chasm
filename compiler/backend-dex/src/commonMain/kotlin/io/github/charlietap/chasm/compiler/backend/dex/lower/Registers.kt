@@ -22,6 +22,7 @@ internal class Registers(
     private val recording: ByteArray? = null,
     chunk: Boolean = false,
     private val constantsUsed: BooleanArray? = null,
+    suspendable: Boolean = false,
 ) {
     private var next = SCRATCH
 
@@ -30,6 +31,10 @@ internal class Registers(
     val frameBase = if (chunk) next++ else UNUSED
 
     val objectFrame = if (chunk) next++ else UNUSED
+
+    val suspendCallee = if (suspendable && !savesStack) next++ else UNUSED
+
+    val lastChunk = if (suspendable && chunk && savesStack) next++ else UNUSED
 
     val memorySize = if (inlineMemory) next++ else UNUSED
 

@@ -46,6 +46,7 @@ class ModuleSettings(
             ModuleSetting.LongSetting("byteArrayBaseOffset", byteArrayBaseOffset),
             ModuleSetting.BooleanSetting("interrupts", runtime.interrupts),
             ModuleSetting.BooleanSetting("stacktraces", runtime.stacktraces),
+            ModuleSetting.BooleanSetting("suspendable", runtime.suspendable),
             ModuleSetting.LongSetting("fuel", (runtime.limits.cpu as? CpuLimits.Metered)?.fuel?.units ?: UNSET_LONG),
             ModuleSetting.LongSetting("linearMemoryBytes", memory.linearMemory?.value ?: UNSET_LONG),
             ModuleSetting.LongSetting("gcHeapBytes", memory.gcHeap?.value ?: UNSET_LONG),

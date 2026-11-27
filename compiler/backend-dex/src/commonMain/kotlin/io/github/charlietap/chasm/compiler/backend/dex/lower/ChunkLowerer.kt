@@ -47,11 +47,16 @@ private fun LowerContext.lowerChunkPrologue(
     }
     cachesLoaded = true
     openWindow()
-    reloadSlots()
     if (facts.window.callBufferWords > 0) {
         emit.const(Registers.I0, 0)
         emit.moveObject(registers.callBuffer, Registers.I0)
     }
+    if (isSuspendable) {
+        lowerResumeEntryCheck()
+        emit.const(Registers.I0, 0)
+        emit.moveObject(registers.suspendCallee, Registers.I0)
+    }
+    reloadSlots()
     emit.move(Registers.I0, registers.parameter(1))
     emit.packedSwitch(Registers.I0, 0, chunk.entries.map { entry -> label(entry) })
     trap(UNREACHABLE)

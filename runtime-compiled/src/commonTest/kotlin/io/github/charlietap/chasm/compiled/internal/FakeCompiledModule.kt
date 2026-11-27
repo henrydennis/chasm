@@ -21,6 +21,7 @@ internal class FakeCompiledModule(
     private val initializesEagerly: Boolean = false,
     private val fuel: Long = UNSET_LONG,
     private val stacktraces: Boolean = false,
+    private val suspendable: Boolean = false,
     private val lanes: LongArray = LongArray(0),
     private val declarations: (DataSource) -> ModuleDeclarations = { emptyDeclarations() },
 ) : CompiledModule {
@@ -43,6 +44,10 @@ internal class FakeCompiledModule(
 
     override fun stacktraces(): Boolean {
         return stacktraces
+    }
+
+    override fun suspendable(): Boolean {
+        return suspendable
     }
 
     override fun fuel(): Long {

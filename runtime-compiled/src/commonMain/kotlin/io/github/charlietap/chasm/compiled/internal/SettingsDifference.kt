@@ -19,6 +19,8 @@ internal class SettingsDifference(
                 "fuel ${fuel(moduleConfig.limits.cpu)} but the store has fuel ${fuel(storeConfig.limits.cpu)}"
             moduleConfig.interrupts != storeConfig.interrupts ->
                 "interrupts ${moduleConfig.interrupts} but the store has interrupts ${storeConfig.interrupts}"
+            moduleConfig.suspendable != storeConfig.suspendable ->
+                "suspendable ${moduleConfig.suspendable} but the store has suspendable ${storeConfig.suspendable}"
             moduleMemory.linearMemory != storeMemory.linearMemory ->
                 "linearMemory ${bytes(moduleMemory.linearMemory)} but the store allows ${bytes(storeMemory.linearMemory)}"
             moduleMemory.gcHeap != storeMemory.gcHeap ->

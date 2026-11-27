@@ -36,6 +36,7 @@ internal class Locals(
     val scratchValue: Int
     val scratchObject: Int
     val scratchRtt: Int
+    val suspendCallee: Int
 
     private val scratchArrays = HashMap<String, Int>()
 
@@ -104,6 +105,7 @@ internal class Locals(
         scratchReferences = local(OBJECT_ARRAY, 1)
         scratchObject = local(internalName(OBJECT_TYPE), 1)
         scratchRtt = local(internalName(RTT_TYPE), 1)
+        suspendCallee = local(internalName(OBJECT_TYPE), 1)
         STORAGE_ARRAYS.forEach { descriptor -> scratchArrays[descriptor] = local(descriptor, 1) }
         frameArray = local("[J", 1)
         objectFrame = local(OBJECT_ARRAY, 1)

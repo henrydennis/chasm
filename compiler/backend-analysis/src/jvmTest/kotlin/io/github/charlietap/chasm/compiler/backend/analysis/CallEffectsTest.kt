@@ -39,6 +39,14 @@ class CallEffectsTest {
         listOf("grows", "calls_grows", "tail_grows").forEach { name -> assertGrows(name, grows = true) }
     }
 
+    @Test
+    fun `only imports, unknown calls, and functions reaching them may suspend`() {
+        listOf("host", "calls_import", "calls_indirect", "calls_indirect_dynamic", "calls_ref", "tail_indirect", "tail_ref")
+            .forEach { name -> assertEquals(true, analysis.maySuspend[index(name)], "$name may suspend") }
+        listOf("struct_new", "array_new_ss", "get", "calls_get", "even", "odd", "grows")
+            .forEach { name -> assertEquals(false, analysis.maySuspend[index(name)], "$name should not suspend") }
+    }
+
     private fun assertGrows(
         name: String,
         grows: Boolean,

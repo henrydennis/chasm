@@ -135,6 +135,10 @@ class ModuleInfoTest {
             return false
         }
 
+        override fun suspendable(): Boolean {
+            return false
+        }
+
         override fun fuel(): Long {
             return UNSET_LONG
         }

@@ -37,6 +37,8 @@ internal class Chunk(
 
         const val LEAVE_WITHOUT_RESULT = -2
 
+        const val SUSPEND = -3
+
         private val NO_SLOTS = IntArray(0)
     }
 }

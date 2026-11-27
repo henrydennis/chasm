@@ -26,6 +26,7 @@ internal class RuntimeSettings {
         return RuntimeConfig(
             interrupts = compiled.interrupts(),
             stacktraces = compiled.stacktraces(),
+            suspendable = compiled.suspendable(),
             limits = Limits(
                 cpu = if (fuel == UNSET_LONG) CpuLimits.Unmetered else CpuLimits.Metered(Fuel(fuel)),
                 memory = MemoryLimits(

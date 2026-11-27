@@ -17,6 +17,7 @@ import io.github.charlietap.chasm.compiler.backend.abi.PENDING_TAIL_FIELD
 import io.github.charlietap.chasm.compiler.backend.abi.REFERENCE_TABLE
 import io.github.charlietap.chasm.compiler.backend.abi.REFERENCE_TARGET
 import io.github.charlietap.chasm.compiler.backend.abi.RESULT_REFERENCES
+import io.github.charlietap.chasm.compiler.backend.abi.RESUME_TAIL_OBJECTS
 import io.github.charlietap.chasm.compiler.backend.abi.Resource
 import io.github.charlietap.chasm.compiler.backend.abi.descriptorWords
 import io.github.charlietap.chasm.compiler.backend.abi.returnDescriptor
@@ -55,15 +56,27 @@ private fun LowerContext.directCall(
 
     val words = loadWindow(call.type, call.arguments())
     val method = module.functionMethod(callee)
-    emit.invokeRange(module.functionInvocation(callee), registers.window, 3 + words)
+    val invocation = module.functionInvocation(callee)
+    emit.invokeRange(invocation, registers.window, 3 + words)
 
     val analysis = module.analysis
+    val checksSuspend = isSuspendable && analysis.maySuspend[callee.index]
     finishCall(
         returns = method.returns,
         call = call,
         restoreBinding = false,
         checksUnwinding = analysis.usesExceptions && analysis.mayUnwind[callee.index],
         checksPendingTailCall = analysis.hasTailCalls && analysis.requestsTailCall[callee.index],
+        hasCallee = false,
+        emitResume = if (checksSuspend) {
+            {
+                val dummyWords = loadDummyWindow(call.type)
+                emit.invokeRange(invocation, registers.window, 3 + dummyWords)
+                moveCallResultToStandardRegister(method.returns)
+            }
+        } else {
+            null
+        },
     )
 }
 
@@ -110,17 +123,36 @@ private fun LowerContext.invokeTypedTarget(
     done: Label,
 ) {
 
+    if (isSuspendable) {
+        emit.moveObject(registers.suspendCallee, Registers.OBJECT)
+    }
     emit.moveObject(registers.window, Registers.OBJECT)
     loadWindow(call.type, call.arguments())
     emit.move(registers.window + 2, Registers.DEPTH)
-    emit.invokeInterfaceRange(typedCall(signature, call.type, module.referenceDescriptor), registers.window)
+    val typed = typedCall(signature, call.type, module.referenceDescriptor)
+    val returns = returnDescriptor(call.type, module.referenceDescriptor)
+    emit.invokeInterfaceRange(typed, registers.window)
 
     finishCall(
-        returns = returnDescriptor(call.type, module.referenceDescriptor),
+        returns = returns,
         call = call,
         restoreBinding = true,
         checksUnwinding = module.analysis.usesExceptions,
         checksPendingTailCall = module.analysis.hasTailCalls,
+        hasCallee = true,
+        emitResume = if (isSuspendable) {
+            {
+                emit.moveObject(Registers.OBJECT, registers.suspendCallee)
+                emit.checkCast(Registers.OBJECT, signature)
+                emit.moveObject(registers.window, Registers.OBJECT)
+                loadDummyWindow(call.type)
+                emit.move(registers.window + 2, Registers.DEPTH)
+                emit.invokeInterfaceRange(typed, registers.window)
+                moveCallResultToStandardRegister(returns)
+            }
+        } else {
+            null
+        },
     )
     emit.gotoLabel(done)
 }
@@ -139,10 +171,12 @@ private fun LowerContext.finishCall(
     restoreBinding: Boolean,
     checksUnwinding: Boolean,
     checksPendingTailCall: Boolean,
+    hasCallee: Boolean = false,
+    emitResume: (() -> Unit)? = null,
 ) {
 
     val results = call.type.results.types.size
-    if (results == 1 && !restoreBinding && !checksUnwinding && !checksPendingTailCall) {
+    if (results == 1 && !restoreBinding && !checksUnwinding && !checksPendingTailCall && emitResume == null) {
 
         val slot = call.resultBase
         val kind = when (returns) {
@@ -167,11 +201,12 @@ private fun LowerContext.finishCall(
         }
     }
 
-    when (returns) {
-        "V" -> Unit
-        "I", "F" -> emit.moveResult(Registers.I1)
-        "J", "D" -> emit.moveResultWide(Registers.W0)
-        else -> emit.moveResultObject(Registers.OBJECT)
+    moveCallResultToStandardRegister(returns)
+
+    if (emitResume != null) {
+        val afterInvoke = emit.freshLabel()
+        emit.place(afterInvoke)
+        suspendCheck(hasCallee = hasCallee, afterInvoke = afterInvoke, emitResumeCall = emitResume)
     }
 
     if (restoreBinding) restoreWindow(binding = true)
@@ -217,6 +252,15 @@ private fun LowerContext.finishCall(
     }
 }
 
+private fun LowerContext.moveCallResultToStandardRegister(returns: String) {
+    when (returns) {
+        "V" -> Unit
+        "I", "F" -> emit.moveResult(Registers.I1)
+        "J", "D" -> emit.moveResultWide(Registers.W0)
+        else -> emit.moveResultObject(Registers.OBJECT)
+    }
+}
+
 private fun LowerContext.completePendingTailObjects(
     type: FunctionType,
     returns: String,
@@ -227,8 +271,18 @@ private fun LowerContext.completePendingTailObjects(
     val done = emit.freshLabel()
     emit.getField(Registers.I0, Registers.CONTEXT, CONTEXT_TYPE, PENDING_TAIL_FIELD, FUNCTION_INSTANCE)
     emit.branchZero(Cond.Eq, Registers.I0, done)
-    newLanes(maxOf(results.size, 1), words = true, references = results.any { result -> result is ValueType.Reference })
+    val laneSize = maxOf(results.size, 1)
+    val hasRefResults = results.any { result -> result is ValueType.Reference }
+    newLanes(laneSize, words = true, references = hasRefResults)
     emit.invoke(COMPLETE_TAIL_OBJECTS, Registers.CONTEXT, Registers.SECOND_OBJECT, Registers.THIRD_OBJECT, Registers.DEPTH)
+    if (isSuspendable) {
+        val afterTail = emit.freshLabel()
+        emit.place(afterTail)
+        suspendCheck(hasCallee = false, afterInvoke = afterTail) {
+            newLanes(laneSize, words = true, references = hasRefResults)
+            emit.invoke(RESUME_TAIL_OBJECTS, Registers.CONTEXT, Registers.SECOND_OBJECT, Registers.THIRD_OBJECT, Registers.DEPTH)
+        }
+    }
     unwindCheck()
 
     if (results.size > 1) {
@@ -419,6 +473,53 @@ private fun LowerContext.bridgeCall(
         else -> throw Unsupported(instruction::class.simpleName ?: "call")
     }
     restoreWindow()
+    if (isSuspendable) {
+        val afterInvoke = emit.freshLabel()
+        emit.place(afterInvoke)
+        val hasReferences = (parameters + results).any { type -> type is ValueType.Reference }
+        val refSize = maxOf(parameters.size, results.size, 1)
+        suspendCheck(hasCallee = false, afterInvoke = afterInvoke) {
+            loadCallBuffer()
+            emit.moveObject(Registers.SECOND_OBJECT, Registers.OBJECT)
+            if (hasReferences) {
+                emit.const(Registers.I0, refSize)
+                emit.newArray(Registers.THIRD_OBJECT, Registers.I0, OBJECT_ARRAY)
+            } else {
+                emit.const(Registers.THIRD_OBJECT, 0)
+            }
+            emit.moveObject(window, Registers.CONTEXT)
+            loadObject(Registers.OBJECT, Resource.Instance, MODULE_INSTANCE)
+            emit.moveObject(window + 1, Registers.OBJECT)
+            when (instruction) {
+                is ControlInstruction.Call -> {
+                    loadObject(Registers.OBJECT, Resource.Function(instruction.function.index), FUNCTION_INSTANCE)
+                    emit.moveObject(window + 2, Registers.OBJECT)
+                    objectLane(window + 3)
+                    emit.invokeRange(CALL_OBJECTS, window, CALL_OBJECTS.words)
+                }
+                is ControlInstruction.CallIndirectI, is ControlInstruction.CallIndirectS -> {
+                    val table = if (instruction is ControlInstruction.CallIndirectI) instruction.table.index else (instruction as ControlInstruction.CallIndirectS).table.index
+                    val type = if (instruction is ControlInstruction.CallIndirectI) instruction.type.index else (instruction as ControlInstruction.CallIndirectS).type.index
+                    loadObject(Registers.OBJECT, Resource.ReferenceTable(table), REFERENCE_TABLE)
+                    emit.moveObject(window + 2, Registers.OBJECT)
+                    loadValueInt(Registers.I0, Resource.RuntimeType(type))
+                    emit.move(window + 3, Registers.I0)
+                    emit.const(Registers.I0, 0)
+                    emit.move(window + 4, Registers.I0)
+                    objectLane(window + 5)
+                    emit.invokeRange(CALL_INDIRECT_OBJECTS, window, CALL_INDIRECT_OBJECTS.words)
+                }
+                is ControlInstruction.CallRefS -> {
+                    emit.const(Registers.I0, 0)
+                    emit.moveObject(window + 2, Registers.I0)
+                    objectLane(window + 3)
+                    emit.invokeRange(CALL_REFERENCE_OBJECTS, window, CALL_REFERENCE_OBJECTS.words)
+                }
+                else -> throw Unsupported(instruction::class.simpleName ?: "call")
+            }
+            restoreWindow()
+        }
+    }
     unwindCheck()
 
     results.forEachIndexed { index, type ->

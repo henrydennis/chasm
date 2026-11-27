@@ -126,7 +126,8 @@ internal class FunctionLowering(
         reusable: RegisterHomes?,
     ): Attempt {
 
-        val wide = functionRegisters(function, analysis, null)
+        val suspendable = module.options.suspendable && module.analysis.maySuspend[function.index.index]
+        val wide = functionRegisters(function, analysis, null, suspendable = suspendable)
         if (wide.count > MAX_REGISTERS) {
             return Attempt.TooLarge(inlinedAccesses = false, homes = reusable)
         }
@@ -138,7 +139,7 @@ internal class FunctionLowering(
 
         while (true) {
 
-            val registers = functionRegisters(function, analysis, homes)
+            val registers = functionRegisters(function, analysis, homes, suspendable = suspendable)
             if (registers.count >= ART_MAX_COMPILED_REGISTERS) {
                 return Attempt.TooLarge(inlinedAccesses = false, homes = homes)
             }
@@ -174,8 +175,9 @@ internal class FunctionLowering(
         reusable: RegisterHomes?,
     ): Attempt {
 
+        val suspendable = module.options.suspendable && module.analysis.maySuspend[function.index.index]
         val analysis = whole?.analysis ?: analyzeFunction(module, function, facts, facts.memoryMode)
-        if (chunkRegisters(function, analysis, null, null).count > MAX_REGISTERS) {
+        if (chunkRegisters(function, analysis, null, null, suspendable = suspendable).count > MAX_REGISTERS) {
             return Attempt.Refused(FRAME_TOO_LARGE)
         }
 
@@ -205,7 +207,7 @@ internal class FunctionLowering(
             }
 
             val table = dispatchTable(chunks, splitFacts)
-            val registers = dispatcherRegisters(analysis)
+            val registers = dispatcherRegisters(analysis, suspendable = suspendable)
             val slotFrameCost = (facts.frame.frameSlots * 8 + 31) / 32
             val cost = frameCost(registers) + chunks.maxOf { chunk -> chunk.cost } + slotFrameCost
             module.constants.beginMethod()
@@ -345,6 +347,7 @@ private fun functionRegisters(
     function: CirFunction,
     analysis: FunctionAnalysis,
     homes: RegisterHomes?,
+    suspendable: Boolean = false,
 ): Registers {
 
     val facts = analysis.facts
@@ -360,12 +363,16 @@ private fun functionRegisters(
         inlineMemory = analysis.usesInlineMemory,
         callBuffer = window.callBufferWords > 0,
         homes = homes,
+        suspendable = suspendable,
     )
 }
 
 private const val FRAME_TOO_LARGE = "frame too large"
 
-private fun dispatcherRegisters(analysis: FunctionAnalysis): Registers {
+private fun dispatcherRegisters(
+    analysis: FunctionAnalysis,
+    suspendable: Boolean = false,
+): Registers {
     return Registers(
         frameSlots = 0,
         temporaries = 0,
@@ -377,6 +384,7 @@ private fun dispatcherRegisters(analysis: FunctionAnalysis): Registers {
         savesStack = true,
         callBuffer = false,
         chunk = true,
+        suspendable = suspendable,
     )
 }
 

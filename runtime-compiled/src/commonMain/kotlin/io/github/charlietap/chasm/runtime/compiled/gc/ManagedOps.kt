@@ -13,6 +13,8 @@ import io.github.charlietap.chasm.runtime.exception.HostRaisedWasmException
 import io.github.charlietap.chasm.runtime.exception.InvocationException
 import io.github.charlietap.chasm.runtime.execution.ALLOCATION_INTERVAL
 import io.github.charlietap.chasm.runtime.execution.ExecutionContext
+import io.github.charlietap.chasm.runtime.execution.PendingSuspension
+import io.github.charlietap.chasm.runtime.execution.SuspendedFrame
 import io.github.charlietap.chasm.runtime.execution.maximumArrayLength
 import io.github.charlietap.chasm.runtime.instance.FunctionInstance
 import io.github.charlietap.chasm.runtime.instance.ModuleInstance
@@ -225,6 +227,59 @@ fun takeException(
     return exception
 }
 
+private const val TAIL_RESUME_SITE = -1
+
+private class TailTarget(
+    val function: FunctionInstance,
+    val caller: ModuleInstance,
+)
+
+@InternalChasmApi
+fun pushSuspendedFrame(
+    context: ExecutionContext,
+    site: Int,
+    words: LongArray,
+    objects: Array<Any?>?,
+    callee: Any?,
+) {
+    val frames = context.suspensionFrames ?: ArrayList<SuspendedFrame>().also { list -> context.suspensionFrames = list }
+    frames.add(SuspendedFrame(site, words, objects, callee))
+}
+
+@InternalChasmApi
+fun popSuspendedFrame(
+    context: ExecutionContext,
+): SuspendedFrame {
+    val frames = checkNotNull(context.suspensionFrames) { "no suspended frame available" }
+    return frames.removeAt(frames.lastIndex)
+}
+
+internal fun resetSuspension(context: ExecutionContext) {
+    context.compiledSuspending = false
+    context.compiledResuming = false
+    context.pendingSuspension = null
+    context.suspensionFrames?.clear()
+    context.resumeHostWords = null
+    context.resumeHostReferences = null
+}
+
+private fun popTailTarget(context: ExecutionContext): TailTarget? {
+    val frames = context.suspensionFrames
+    if (frames.isNullOrEmpty()) return null
+    val top = frames[frames.lastIndex]
+    if (top.site != TAIL_RESUME_SITE) return null
+    frames.removeAt(frames.lastIndex)
+    return top.callee as TailTarget
+}
+
+private fun pushTailTarget(
+    context: ExecutionContext,
+    function: FunctionInstance,
+    caller: ModuleInstance,
+) {
+    pushSuspendedFrame(context, TAIL_RESUME_SITE, NO_WORDS, null, TailTarget(function, caller))
+}
+
 @InternalChasmApi
 fun callObjects(
     context: ExecutionContext,
@@ -251,14 +306,48 @@ private fun callObjectsUntilDone(
     var targetCaller = caller
     var words = values
     var objects = references
+    if (context.compiledResuming) {
+        val tail = popTailTarget(context)
+        if (tail != null) {
+            target = tail.function
+            targetCaller = tail.caller
+        }
+        if (context.suspensionFrames.isNullOrEmpty()) {
+            context.compiledResuming = false
+            if (context.compiledUnwinding) return
+            val hostWords = context.resumeHostWords
+            val hostReferences = context.resumeHostReferences
+            context.resumeHostWords = null
+            context.resumeHostReferences = null
+            if (hostWords != null) {
+                hostWords.copyInto(values, 0, 0, minOf(hostWords.size, values.size))
+            }
+            if (hostReferences != null) {
+                hostReferences.copyInto(references, 0, 0, minOf(hostReferences.size, references.size))
+            }
+            return
+        }
+    }
     while (true) {
         val compiled = (target as? FunctionInstance.WasmFunction)?.callStrategy?.compiledEntry
         if (compiled is ObjectEntry) {
             compiled.callObjects(context, words, objects, depth + COMPILED_CALL_COST)
+            if (context.compiledSuspending) {
+                if (target !== function) {
+                    pushTailTarget(context, target, targetCaller)
+                }
+                return
+            }
             if (context.compiledUnwinding) return
         } else {
             val lane = (target as FunctionInstance.HostFunction).function as ObjectLaneHostFunction
             callObjectLane(context, targetCaller, lane, words, objects, depth)
+            if (context.compiledSuspending) {
+                if (target !== function) {
+                    pushTailTarget(context, target, targetCaller)
+                }
+                return
+            }
         }
         val next = context.pendingTailFunction ?: break
         targetCaller = checkNotNull(context.pendingTailCaller)
@@ -334,9 +423,40 @@ fun completeTailObjects(
     context.pendingTailArguments = null
     context.pendingTailReferences = null
     callObjects(context, caller, function, words, objects, depth)
+    if (context.compiledSuspending) {
+        pushTailTarget(context, function, caller)
+        return
+    }
     if (context.compiledUnwinding) return
     words.copyInto(values, 0, 0, minOf(results, values.size))
     if (references != null) objects.copyInto(references, 0, 0, minOf(results, references.size))
+}
+
+@InternalChasmApi
+fun resumeTailObjects(
+    context: ExecutionContext,
+    values: LongArray,
+    references: Array<Any?>?,
+    depth: Int,
+) {
+    val tail = checkNotNull(popTailTarget(context)) { "no suspended tail target available" }
+    val function = tail.function
+    val caller = tail.caller
+    val results = function.resultCount
+    val words = if (values.size >= results) values else LongArray(results)
+    val objects = if (references != null && references.size >= results) references else arrayOfNulls(results)
+    callObjects(context, caller, function, words, objects, depth)
+    if (context.compiledSuspending) {
+        pushTailTarget(context, function, caller)
+        return
+    }
+    if (context.compiledUnwinding) return
+    if (words !== values) {
+        words.copyInto(values, 0, 0, minOf(results, values.size))
+    }
+    if (references != null && objects !== references) {
+        objects.copyInto(references, 0, 0, minOf(results, references.size))
+    }
 }
 
 @InternalChasmApi
@@ -350,7 +470,15 @@ fun callIndirectObjects(
     references: Array<Any?>?,
     depth: Int,
 ) {
-    callObjects(context, caller, indirectFunction(context, table, type, elementIndex).instance, values, references, depth)
+    val target = if (context.compiledResuming) {
+        checkNotNull(popTailTarget(context)) { "no suspended indirect target available" }.function
+    } else {
+        indirectFunction(context, table, type, elementIndex).instance
+    }
+    callObjects(context, caller, target, values, references, depth)
+    if (context.compiledSuspending) {
+        pushTailTarget(context, target, caller)
+    }
 }
 
 @InternalChasmApi
@@ -362,8 +490,16 @@ fun callReferenceObjects(
     references: Array<Any?>?,
     depth: Int,
 ) {
-    if (function == null) throw InvocationException(InvocationError.NonNullReferenceExpected)
-    callObjects(context, caller, (function as ManagedFunction).instance, values, references, depth)
+    val target = if (context.compiledResuming) {
+        checkNotNull(popTailTarget(context)) { "no suspended reference target available" }.function
+    } else {
+        if (function == null) throw InvocationException(InvocationError.NonNullReferenceExpected)
+        (function as ManagedFunction).instance
+    }
+    callObjects(context, caller, target, values, references, depth)
+    if (context.compiledSuspending) {
+        pushTailTarget(context, target, caller)
+    }
 }
 
 private fun callObjectLane(
@@ -374,6 +510,47 @@ private fun callObjectLane(
     references: Array<Any?>,
     depth: Int,
 ) {
+    if (function is ObjectLaneSuspendHostFunction) {
+        if (!context.allowSuspend) {
+            throw InvocationException(InvocationError.HostFunctionError("cannot call a suspending host function from a synchronous invocation"))
+        }
+        if (!context.config.suspendable) {
+            throw InvocationException(InvocationError.HostFunctionError("the compiled module was not compiled with RuntimeConfig(suspendable = true)"))
+        }
+        val size = maxOf(values.size, function.slotCount)
+        val hostWords = values.copyOf(size)
+        val hostReferences = references.copyOf(size)
+        context.pendingSuspension = object : PendingSuspension {
+            override suspend fun resume() {
+                val store = context.store
+                val previous = context.compiledCallDepth
+                val previousStore = store.compiledCallDepth
+                context.compiledCallDepth = depth + INTERPRETED_CALL_COST
+                store.compiledCallDepth = depth + INTERPRETED_CALL_COST
+                try {
+                    function.callSuspending(hostWords, hostReferences, 0, 0, caller, context)
+                    function.checkResults((store.referenceStorage as ManagedStore).checks, hostReferences)
+                    context.resumeHostWords = hostWords
+                    context.resumeHostReferences = hostReferences
+                } catch (_: HostRaisedWasmException) {
+                    context.compiledUnwinding = true
+                } catch (exception: InvocationException) {
+                    if (exception.error == InvocationError.ThrownException) {
+                        context.compiledUnwinding = true
+                    } else {
+                        throw exception
+                    }
+                } catch (exception: HostFunctionException) {
+                    throw InvocationException(InvocationError.HostFunctionError(exception.reason))
+                } finally {
+                    context.compiledCallDepth = previous
+                    store.compiledCallDepth = previousStore
+                }
+            }
+        }
+        context.compiledSuspending = true
+        return
+    }
 
     val store = context.store
     val previous = context.compiledCallDepth

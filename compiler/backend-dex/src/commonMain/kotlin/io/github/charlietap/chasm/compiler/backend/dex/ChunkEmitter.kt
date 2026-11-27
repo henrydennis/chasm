@@ -57,10 +57,11 @@ internal class ProbingChunkEmitter(
         val continuations = splitFacts.continuations
         val dexMethod = module.references.of(method)
 
+        val suspendable = module.options.suspendable && module.analysis.maySuspend[function.index.index]
         val chunk = Chunk(start, end, entries, continuations, next)
         val usedKinds = ByteArray(frameSlots)
         val constants = BooleanArray(analysis.cachedConstants.size)
-        val recording = chunkRegisters(function, analysis, homes, null, recording = usedKinds, constants = constants)
+        val recording = chunkRegisters(function, analysis, homes, null, recording = usedKinds, constants = constants, suspendable = suspendable)
         module.constants.beginMethod()
         val probe = code.beginStaticMethod(dexMethod, recording.count, MemberAccess.Public)
         try {
@@ -69,7 +70,7 @@ internal class ProbingChunkEmitter(
             probe.abort()
         }
 
-        val registers = chunkRegisters(function, analysis, homes, usedKinds)
+        val registers = chunkRegisters(function, analysis, homes, usedKinds, suspendable = suspendable)
         module.constants.beginMethod()
         val body = code.beginStaticMethod(dexMethod, registers.count, MemberAccess.Public, HUGE_METHOD_CODE_UNITS)
         try {
@@ -164,6 +165,7 @@ internal fun chunkRegisters(
     held: ByteArray?,
     recording: ByteArray? = null,
     constants: BooleanArray? = null,
+    suspendable: Boolean = false,
 ): Registers {
 
     val window = analysis.facts.window
@@ -182,5 +184,6 @@ internal fun chunkRegisters(
         recording = recording,
         chunk = true,
         constantsUsed = constants,
+        suspendable = suspendable,
     )
 }

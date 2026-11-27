@@ -11,6 +11,7 @@ import io.github.charlietap.chasm.runtime.compiled.gc.ManagedStore
 import io.github.charlietap.chasm.runtime.compiled.gc.PendingExceptions
 import io.github.charlietap.chasm.runtime.compiled.gc.ReferenceCheck
 import io.github.charlietap.chasm.runtime.compiled.gc.enterObjects
+import io.github.charlietap.chasm.runtime.compiled.gc.enterObjectsSuspending
 import io.github.charlietap.chasm.runtime.compiled.gc.takeException
 import io.github.charlietap.chasm.runtime.exception.InvocationException
 import io.github.charlietap.chasm.runtime.execution.ExecutionContext
@@ -72,6 +73,33 @@ internal class ObjectCall(
         return rejection(stack, references) ?: enter(stack, references)
     }
 
+    suspend fun callSuspending(
+        stack: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+
+        val rejection = rejection(stack, references)
+        if (rejection != null) {
+            return rejection
+        }
+
+        for (position in referenceParameters.indices) {
+            val index = referenceParameters[position]
+            if (!parameterChecks[position].accepts(references[index])) {
+                return ChasmResult.Error(ExecutionError.Rejected("argument $index does not match its type"))
+            }
+        }
+
+        return enterSuspending(stack, references)
+    }
+
+    suspend fun unsafeCallSuspending(
+        stack: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+        return rejection(stack, references) ?: enterSuspending(stack, references)
+    }
+
     private fun rejection(
         stack: LongArray,
         references: Array<Any?>,
@@ -105,6 +133,29 @@ internal class ObjectCall(
         }
 
         val error = enterObjects(context, function, stack, references, pending)
+        if (error == RuntimeInvocationError.ThrownException) {
+            return ChasmResult.Error(ExecutionError.Thrown(takeException(context)))
+        }
+        if (error != null) {
+            return trapped(error)
+        }
+
+        idle.set(context)
+        return SUCCESS
+    }
+
+    private suspend fun enterSuspending(
+        stack: LongArray,
+        references: Array<Any?>,
+    ): ChasmResult<Unit, InvocationError> {
+
+        val context = idle.getAndSet(null) ?: try {
+            context()
+        } catch (exception: InvocationException) {
+            return trapped(exception.error)
+        }
+
+        val error = enterObjectsSuspending(context, function, stack, references, pending)
         if (error == RuntimeInvocationError.ThrownException) {
             return ChasmResult.Error(ExecutionError.Thrown(takeException(context)))
         }

@@ -21,9 +21,18 @@ internal fun LowerContext.lowerPrologue(
     emit.store(Opcodes.ISTORE, locals.frameBase)
     emit.insn(Opcodes.ACONST_NULL)
     emit.store(Opcodes.ASTORE, locals.frameArray)
-    for (slot in 0 until parameterCount) {
-        initialize(slot, 0L)
+    for (slot in 0 until frame.frameSlots) {
+        initialize(slot, if (slot < parameterCount) 0L else frame.initialValues[slot])
     }
+    if (function.exceptions != null) {
+        pushContext()
+        emit.invokeStatic(SAVE_STACK)
+        emit.store(Opcodes.LSTORE, locals.stackSaved)
+    }
+    if (!facts.isLeaf || frameCost > MAX_UNCHARGED_LEAF_FRAME_COST) {
+        chargeStackBudget(frameCost)
+    }
+    lowerResumeEntryCheck()
     parameterDescriptors.forEachIndexed { index, descriptor ->
         if (argumentArray) {
             return@forEachIndexed storeArgument(index, descriptor)
@@ -51,15 +60,6 @@ internal fun LowerContext.lowerPrologue(
                 storeLong(index)
             }
         }
-    }
-    for (slot in parameterCount until frame.frameSlots) initialize(slot, frame.initialValues[slot])
-    if (function.exceptions != null) {
-        pushContext()
-        emit.invokeStatic(SAVE_STACK)
-        emit.store(Opcodes.LSTORE, locals.stackSaved)
-    }
-    if (!facts.isLeaf || frameCost > MAX_UNCHARGED_LEAF_FRAME_COST) {
-        chargeStackBudget(frameCost)
     }
 }
 
@@ -109,7 +109,7 @@ internal fun LowerContext.initializeScratch() {
     emit.store(Opcodes.ISTORE, locals.exitPosition)
     emit.long(0L)
     emit.store(Opcodes.LSTORE, locals.stackSaved)
-    listOf(locals.scratchValues, locals.scratchReferences, locals.scratchObject, locals.scratchRtt, locals.objectFrame).forEach { local ->
+    listOf(locals.scratchValues, locals.scratchReferences, locals.scratchObject, locals.scratchRtt, locals.suspendCallee, locals.objectFrame).forEach { local ->
         emit.insn(Opcodes.ACONST_NULL)
         emit.store(Opcodes.ASTORE, local)
     }

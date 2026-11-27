@@ -113,7 +113,7 @@ private class FunctionLowering(
         function.redundantBoundsChecks(table)
     }
 
-    private val facts = FunctionFacts(module, function, frame, slotKindFlow, checkedAccesses)
+    private val facts = FunctionFacts(module, function, frame, table, slotKindFlow, checkedAccesses)
 
     private fun inlineMemory(
         positions: IntRange,
